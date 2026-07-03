@@ -19,6 +19,7 @@ interface ControlsPanelProps {
   onApplyArray: () => void;
   onShuffle: () => void;
   onReverse: () => void;
+  onOperation: (operation: string) => void;
   onPlay: () => void;
   onPause: () => void;
   onStepForward: () => void;
@@ -53,6 +54,7 @@ export const ControlsPanel = ({
   onApplyArray,
   onShuffle,
   onReverse,
+  onOperation,
   onPlay,
   onPause,
   onStepForward,
@@ -97,22 +99,26 @@ export const ControlsPanel = ({
       </div>
 
       {/* Shuffle & Reverse Actions */}
-      <div className="grid grid-cols-2 gap-2">
-        <button 
-          onClick={onShuffle} 
-          className="flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 py-2 text-xs font-semibold text-slate-200 hover:bg-white/10 hover:text-white transition"
-        >
-          <Shuffle size={14} />
-          Shuffle
-        </button>
-        <button 
-          onClick={onReverse} 
-          className="flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 py-2 text-xs font-semibold text-slate-200 hover:bg-white/10 hover:text-white transition"
-        >
-          <SkipBack size={14} className="rotate-90" />
-          Reverse
-        </button>
-      </div>
+      {algorithm.category === 'Sorting' || algorithm.category === 'Searching' ? (
+        <div className="grid grid-cols-2 gap-2">
+          <button 
+            onClick={onShuffle} 
+            className="flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 py-2 text-xs font-semibold text-slate-200 hover:bg-white/10 hover:text-white transition"
+          >
+            <Shuffle size={14} />
+            Shuffle
+          </button>
+          <button 
+            onClick={onReverse} 
+            className="flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 py-2 text-xs font-semibold text-slate-200 hover:bg-white/10 hover:text-white transition"
+          >
+            <SkipBack size={14} className="rotate-90" />
+            Reverse
+          </button>
+        </div>
+      ) : (
+        <OperationButtons category={algorithm.category} onOperation={onOperation} />
+      )}
 
       {/* Target Input (e.g. for searching) */}
       <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -180,3 +186,56 @@ const Range = ({ label, value, min, max, reverse, onChange }: { label: string; v
     </span>
   </label>
 );
+
+const operationSets: Record<string, Array<{ label: string; value: string }>> = {
+  'Linked List': [
+    { label: 'Insert', value: 'insert' },
+    { label: 'Traverse', value: 'visit' },
+    { label: 'Delete', value: 'delete' }
+  ],
+  Stack: [
+    { label: 'Push', value: 'push' },
+    { label: 'Peek', value: 'peek' },
+    { label: 'Pop', value: 'pop' }
+  ],
+  Queue: [
+    { label: 'Enqueue', value: 'enqueue' },
+    { label: 'Peek', value: 'peek' },
+    { label: 'Dequeue', value: 'dequeue' }
+  ],
+  Trees: [
+    { label: 'Insert', value: 'insert' },
+    { label: 'Search', value: 'visit' },
+    { label: 'Delete', value: 'delete' }
+  ],
+  Graphs: [
+    { label: 'Visit', value: 'visit' },
+    { label: 'Edge', value: 'edge' },
+    { label: 'Relax', value: 'relax' }
+  ],
+  'Dynamic Programming': [
+    { label: 'Fill', value: 'overwrite' },
+    { label: 'Step', value: 'highlight' },
+    { label: 'Reset', value: 'complete' }
+  ]
+};
+
+const OperationButtons = ({ category, onOperation }: { category: string; onOperation: (operation: string) => void }) => {
+  const operations = operationSets[category] ?? [];
+  return (
+    <div>
+      <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Operations</div>
+      <div className="grid grid-cols-3 gap-2">
+        {operations.map((operation) => (
+          <button
+            key={operation.value}
+            onClick={() => onOperation(operation.value)}
+            className="rounded-lg border border-cyan-400/25 bg-cyan-400/10 px-2 py-2 text-xs font-bold text-cyan-100 transition hover:bg-cyan-400/20"
+          >
+            {operation.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};

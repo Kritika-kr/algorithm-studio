@@ -60,8 +60,10 @@ StepResponse SearchingAlgorithms::run(const std::string& algorithm, std::vector<
   } else if (algorithm == "interpolation-search") {
     int low = 0;
     int high = static_cast<int>(values.size()) - 1;
-    while (low <= high && target >= values[low] && target <= values[high] && values[high] != values[low]) {
-      int pos = low + ((target - values[low]) * (high - low)) / (values[high] - values[low]);
+    while (low <= high && target >= values[low] && target <= values[high]) {
+      int pos = values[high] == values[low]
+                    ? low
+                    : low + ((target - values[low]) * (high - low)) / (values[high] - values[low]);
       probe(pos, "Interpolated probe");
       if (found) break;
       if (values[pos] < target) low = pos + 1;

@@ -9,10 +9,7 @@ import {
   Moon, 
   Sun, 
   Compass, 
-  Play, 
-  CheckCircle,
-  HelpCircle,
-  HelpCircleIcon
+  Play
 } from 'lucide-react';
 import { AlgorithmCategory } from '../../types/algorithm';
 import { algorithms } from '../../data/algorithms';
@@ -27,7 +24,7 @@ export interface SearchItem {
   tags: string[];
   type: 'algorithm' | 'data-structure' | 'category' | 'page' | 'command';
   route: {
-    view: AlgorithmCategory | 'Home' | 'Compare';
+    view: AlgorithmCategory | 'Home' | 'Compare' | 'Favorites';
     id?: string;
     compareLeft?: string;
     compareRight?: string;
@@ -47,7 +44,7 @@ interface GlobalSearchProps {
   onTheme: () => void;
   setDark: (dark: boolean) => void;
   onNavigate: (
-    view: AlgorithmCategory | 'Home' | 'Compare', 
+    view: AlgorithmCategory | 'Home' | 'Compare' | 'Favorites', 
     id?: string, 
     compareLeft?: string, 
     compareRight?: string,
@@ -380,6 +377,7 @@ const SEARCH_CATALOG: SearchItem[] = [
 
 export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearchProps) => {
   const [query, setQuery] = useState('');
+  const [paletteQuery, setPaletteQuery] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   
@@ -415,16 +413,19 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
     });
   };
 
-  // Close dropdown on click outside
+  // Close dropdown or palette on click outside
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (searchContainerRef.current && !searchContainerRef.current.contains(e.target as Node)) {
         setDropdownOpen(false);
       }
+      if (paletteOpen && modalContainerRef.current && !modalContainerRef.current.contains(e.target as Node)) {
+        setPaletteOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleOutsideClick);
     return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, []);
+  }, [paletteOpen]);
 
   // Keyboard shortcut listeners (Ctrl + K / Ctrl + P / Cmd + K)
   useEffect(() => {
@@ -439,13 +440,22 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Focus palette input when opened
+  // Focus palette input when opened and close navbar dropdown
   useEffect(() => {
     if (paletteOpen) {
+      setDropdownOpen(false);
+      setPaletteQuery('');
       setTimeout(() => paletteInputRef.current?.focus(), 80);
       setSelectedIndex(0);
     }
   }, [paletteOpen]);
+
+  useEffect(() => {
+    if (dropdownOpen) {
+      setTimeout(() => inputRef.current?.focus(), 50);
+      setSelectedIndex(0);
+    }
+  }, [dropdownOpen]);
 
   // --- Popular List ---
   const popularItems = useMemo(() => {
@@ -554,6 +564,7 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
     });
 
     setQuery('');
+    setPaletteQuery('');
     setDropdownOpen(false);
     setPaletteOpen(false);
     
@@ -590,7 +601,7 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
 
   // --- Command Palette Items ---
   const paletteItems = useMemo(() => {
-    const trimmed = query.trim().toLowerCase();
+    const trimmed = paletteQuery.trim().toLowerCase();
     
     const baseCommands: SearchItem[] = [
       // Navigation
@@ -643,20 +654,20 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
       c.category.toLowerCase().includes(trimmed) || 
       c.tags.some(tag => tag.toLowerCase().includes(trimmed))
     );
-  }, [query]);
+  }, [paletteQuery]);
 
   // Execute palette command
   const handlePaletteSelect = (item: SearchItem) => {
     if (item.id === 'cmd-theme-dark') {
       setDark(true);
       setPaletteOpen(false);
-      setQuery('');
+      setPaletteQuery('');
       return;
     }
     if (item.id === 'cmd-theme-light') {
       setDark(false);
       setPaletteOpen(false);
-      setQuery('');
+      setPaletteQuery('');
       return;
     }
 
@@ -667,14 +678,20 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
     <>
       {/* 1. Global Navbar Search Box */}
       <div ref={searchContainerRef} className="relative flex flex-col">
-        <div 
-          onClick={() => setDropdownOpen(true)}
-          className="flex min-w-0 items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-3.5 py-2 text-slate-300 hover:bg-white/10 hover:border-white/20 transition cursor-pointer md:w-96"
-        >
-          <Search size={15} className="text-slate-400" />
-          <span className="truncate text-xs md:text-sm">
-            {query || "Search algorithms, parameters, tags... (Ctrl+K)"}
-          </span>
+        <div className="flex min-w-0 items-center gap-3 rounded-lg border border-slate-700 bg-slate-900 px-3.5 py-2 text-slate-100 shadow-lg shadow-black/10 transition focus-within:border-cyan-300 md:w-96">
+          <Search size={15} className="shrink-0 text-cyan-300" />
+          <input
+            type="text"
+            value={query}
+            onFocus={() => setDropdownOpen(true)}
+            onChange={(event) => {
+              setQuery(event.target.value);
+              setDropdownOpen(true);
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder="Search algorithms, operations, tags..."
+            className="min-w-0 flex-1 bg-transparent text-xs text-white outline-none placeholder:text-slate-400 md:text-sm"
+          />
           <kbd className="hidden md:inline-flex h-5 select-none items-center gap-0.5 rounded border border-white/20 bg-white/10 px-1.5 font-mono text-[9px] font-medium text-slate-400">
             Ctrl K
           </kbd>
@@ -682,7 +699,7 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
 
         {/* 2. Global Dropdown Results */}
         {dropdownOpen && (
-          <div className="absolute top-12 left-0 z-50 w-full md:w-[480px] rounded-xl border border-white/10 bg-slate-950/95 p-3.5 shadow-2xl backdrop-blur-2xl animate-fade-in-down max-h-[460px] overflow-y-auto">
+          <div className="absolute top-12 left-0 z-50 w-full md:w-[480px] rounded-xl border border-slate-700 bg-slate-950 p-3.5 shadow-2xl animate-fade-in-down max-h-[460px] overflow-y-auto">
             <div className="mb-2.5 flex items-center gap-2 rounded-lg border border-white/10 bg-slate-900/50 px-3 py-2 text-white">
               <Search size={14} className="text-cyan-300" />
               <input
@@ -692,7 +709,7 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Type to filter..."
-                className="w-full bg-transparent text-xs outline-none"
+                className="w-full bg-transparent text-xs text-white outline-none placeholder:text-slate-500"
                 autoFocus
               />
             </div>
@@ -813,24 +830,12 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
 
       {/* 3. Global Command Palette Modal Dialog */}
       {paletteOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/70 p-4 pt-[10%] backdrop-blur-md">
+        <div className="fixed inset-0 z-[9999] flex items-start justify-center bg-slate-950/80 p-4 pt-[12vh] md:pt-[15vh] backdrop-blur-md transition-opacity duration-200">
           <div 
             ref={modalContainerRef}
-            className="w-full max-w-xl rounded-xl border border-white/10 bg-slate-950 p-4 shadow-2xl"
+            className="w-full max-w-xl rounded-xl border border-white/10 bg-slate-900 p-4 shadow-2xl scale-100 transform transition-all duration-200 animate-fade-in focus:outline-none"
             onKeyDown={(e) => {
               if (e.key === 'Escape') setPaletteOpen(false);
-              const list = paletteItems;
-              if (list.length === 0) return;
-              if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                setSelectedIndex((prev) => (prev + 1) % list.length);
-              } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                setSelectedIndex((prev) => (prev - 1 + list.length) % list.length);
-              } else if (e.key === 'Enter') {
-                e.preventDefault();
-                handlePaletteSelect(list[selectedIndex]);
-              }
             }}
           >
             <div className="flex items-center gap-2 border-b border-white/10 pb-2">
@@ -838,8 +843,27 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
               <input
                 ref={paletteInputRef}
                 type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                value={paletteQuery}
+                onChange={(e) => setPaletteQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  const list = paletteItems;
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setPaletteOpen(false);
+                    return;
+                  }
+                  if (list.length === 0) return;
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setSelectedIndex((prev) => (prev + 1) % list.length);
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setSelectedIndex((prev) => (prev - 1 + list.length) % list.length);
+                  } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handlePaletteSelect(list[Math.min(selectedIndex, list.length - 1)]);
+                  }
+                }}
                 placeholder="Command Palette: Search commands, modules, settings..."
                 className="w-full bg-transparent text-sm text-white outline-none placeholder-slate-500"
               />
@@ -852,7 +876,7 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
             </div>
 
             {/* Quick Access Stats & Analytics inside Palette */}
-            {!query.trim() && (
+            {!paletteQuery.trim() && (
               <div className="mt-3 grid grid-cols-2 gap-3 border-b border-white/5 pb-3.5 text-[10px] text-slate-400">
                 <div className="rounded-lg bg-white/5 p-2.5">
                   <h5 className="font-bold text-slate-300">Quick Access Statistics</h5>
@@ -908,7 +932,7 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
               })}
               {paletteItems.length === 0 && (
                 <div className="p-4 text-center text-xs text-slate-400">
-                  No commands matching "{query}" found.
+                  No commands matching "{paletteQuery}" found.
                 </div>
               )}
             </div>

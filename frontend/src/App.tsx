@@ -7,6 +7,7 @@ import { LandingPage } from './components/layout/LandingPage';
 import { ControlsPanel } from './components/panels/ControlsPanel';
 import { StatisticsPanel } from './components/panels/StatisticsPanel';
 import { ExplanationPanel } from './components/panels/ExplanationPanel';
+import { Star } from 'lucide-react';
 import { WorkspaceVisualizer } from './components/visualizers/WorkspaceVisualizer';
 import { CompareMode } from './components/comparison/CompareMode';
 import { useAnimationPlayer } from './hooks/useAnimationPlayer';
@@ -17,8 +18,14 @@ import { AlgorithmCategory, StepResponse } from './types/algorithm';
 const firstByCategory = (category: AlgorithmCategory) => algorithms.find((item) => item.category === category) ?? algorithms[0];
 
 export default function App() {
-  const [dark, setDark] = useState(true);
-  const [view, setView] = useState<AlgorithmCategory | 'Home' | 'Compare'>('Home');
+  const [dark, setDark] = useState(() => {
+    try {
+      const stored = localStorage.getItem('theme');
+      if (stored) return stored === 'dark';
+    } catch (_) {}
+    return true;
+  });
+  const [view, setView] = useState<AlgorithmCategory | 'Home' | 'Compare' | 'Favorites'>('Home');
   const [selectedId, setSelectedId] = useState('bubble-sort');
   
   // Dataset and Input States
@@ -28,6 +35,7 @@ export default function App() {
   const [speed, setSpeed] = useState(260);
   const [target, setTarget] = useState(42);
   const [customArray, setCustomArray] = useState('');
+  const [operation, setOperation] = useState('');
   
   // Comparison presets
   const [compareLeft, setCompareLeft] = useState<string | null>(null);
@@ -35,6 +43,17 @@ export default function App() {
   
   // Auto-playback trigger on launch
   const [autoPlayNext, setAutoPlayNext] = useState(false);
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   const [response, setResponse] = useState<StepResponse>({ 
     steps: [], 
@@ -51,11 +70,15 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
+    document.documentElement.classList.toggle('light', !dark);
+    try {
+      localStorage.setItem('theme', dark ? 'dark' : 'light');
+    } catch (_) {}
   }, [dark]);
 
   // Fetch steps when input array changes
   useEffect(() => {
-    requestAnimationSteps({ id: selected.id, category: selected.category, array, target })
+    requestAnimationSteps({ id: selected.id, category: selected.category, array, target, operation })
       .then(setResponse)
       .catch(() => setResponse({ 
         steps: [], 
@@ -65,7 +88,7 @@ export default function App() {
     const nextRecent = [selected.id, ...recent.filter((id) => id !== selected.id)].slice(0, 6);
     setRecent(nextRecent);
     localStorage.setItem('algorithm-recent', JSON.stringify(nextRecent));
-  }, [array, selected.id, selected.category, target]);
+  }, [array, selected.id, selected.category, target, operation]);
 
   // Handle autostart when response steps load
   useEffect(() => {
@@ -100,14 +123,25 @@ export default function App() {
 
   // Unified global navigation handler
   const handleNavigate = (
-    nextView: AlgorithmCategory | 'Home' | 'Compare',
+    nextView: AlgorithmCategory | 'Home' | 'Compare' | 'Favorites',
     nextId?: string,
     leftId?: string,
     rightId?: string,
     autoPlay = false
   ) => {
     setView(nextView);
-    if (nextId) setSelectedId(nextId);
+    if (nextView !== 'Home' && nextView !== 'Compare' && nextView !== 'Favorites') {
+      const nextAlgorithm = nextId
+        ? algorithms.find((item) => item.id === nextId && item.category === nextView)
+        : firstByCategory(nextView);
+      if (nextAlgorithm) setSelectedId(nextAlgorithm.id);
+      setOperation('');
+      if (nextView === 'Searching' && array.length > 0) {
+        setTarget(array[Math.floor(array.length / 2)]);
+      }
+    } else if (nextId) {
+      setSelectedId(nextId);
+    }
     if (leftId) setCompareLeft(leftId);
     if (rightId) setCompareRight(rightId);
     if (autoPlay) setAutoPlayNext(true);
@@ -131,6 +165,11 @@ export default function App() {
     setArray((prev) => [...prev].reverse());
   };
 
+  const handleOperation = (nextOperation: string) => {
+    setOperation(`${nextOperation}-${Date.now()}`);
+    setAutoPlayNext(true);
+  };
+
   const applyArray = () => {
     const parsed = customArray
       .split(',')
@@ -152,12 +191,25 @@ export default function App() {
   };
 
   const fullscreen = () => {
-    workspaceRef.current?.requestFullscreen?.();
+    if (!document.fullscreenElement) {
+      workspaceRef.current?.requestFullscreen?.().catch((err) => {
+        console.error(`Fullscreen request failed: ${err.message}`);
+      });
+    } else {
+      document.exitFullscreen?.();
+    }
   };
 
   if (view === 'Home') {
     return (
       <div className="flex h-screen bg-slate-950 text-slate-100">
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 z-[1000] bg-slate-950/60 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
+            <div onClick={(e) => e.stopPropagation()}>
+              <Sidebar mobile onClose={() => setMobileMenuOpen(false)} selected="Home" onSelect={(item) => handleNavigate(item)} />
+            </div>
+          </div>
+        )}
         <Sidebar selected={view} onSelect={(item) => handleNavigate(item)} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopNavbar 
@@ -167,6 +219,7 @@ export default function App() {
             onFullscreen={fullscreen} 
             onScreenshot={screenshot} 
             onNavigate={handleNavigate} 
+            onMenu={() => setMobileMenuOpen(true)}
           />
           <LandingPage 
             onStart={() => handleNavigate('Sorting')} 
@@ -181,6 +234,13 @@ export default function App() {
   if (view === 'Compare') {
     return (
       <div className="flex h-screen bg-slate-950 text-slate-100">
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 z-[1000] bg-slate-950/60 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
+            <div onClick={(e) => e.stopPropagation()}>
+              <Sidebar mobile onClose={() => setMobileMenuOpen(false)} selected="Compare" onSelect={(item) => handleNavigate(item)} />
+            </div>
+          </div>
+        )}
         <Sidebar selected="Compare" onSelect={(item) => handleNavigate(item)} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopNavbar 
@@ -190,6 +250,7 @@ export default function App() {
             onFullscreen={fullscreen} 
             onScreenshot={screenshot} 
             onNavigate={handleNavigate} 
+            onMenu={() => setMobileMenuOpen(true)}
           />
           <CompareMode initialLeftId={compareLeft} initialRightId={compareRight} />
         </div>
@@ -197,8 +258,92 @@ export default function App() {
     );
   }
 
+  if (view === 'Favorites') {
+    const favoritedItems = algorithms.filter((item) => favorites.includes(item.id));
+    return (
+      <div className="flex h-screen bg-slate-950 text-slate-100">
+        {mobileMenuOpen && (
+          <div className="fixed inset-0 z-[1000] bg-slate-950/60 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
+            <div onClick={(e) => e.stopPropagation()}>
+              <Sidebar mobile onClose={() => setMobileMenuOpen(false)} selected="Favorites" onSelect={(item) => handleNavigate(item as any)} />
+            </div>
+          </div>
+        )}
+        <Sidebar selected="Favorites" onSelect={(item) => handleNavigate(item as any)} />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <TopNavbar 
+            dark={dark} 
+            onTheme={() => setDark((value) => !value)} 
+            setDark={setDark} 
+            onFullscreen={fullscreen} 
+            onScreenshot={screenshot} 
+            onNavigate={handleNavigate} 
+            onMenu={() => setMobileMenuOpen(true)}
+          />
+          <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-cyan-200 font-bold">Workspace Collections</div>
+              <h1 className="text-2xl font-bold tracking-tight text-white mt-1">Favorites Collection</h1>
+            </div>
+
+            <div className="glass-panel p-6 border border-white/10 bg-slate-950/70 shadow-lg">
+              {favoritedItems.length > 0 ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {favoritedItems.map((item) => (
+                    <div key={item.id} className="rounded-xl border border-white/10 bg-slate-900/40 p-4 hover:border-cyan-300/30 transition flex flex-col justify-between h-44">
+                      <div>
+                        <span className="text-[10px] uppercase font-bold text-cyan-200">{item.category}</span>
+                        <h3 className="text-base font-bold text-white mt-1">{item.name}</h3>
+                        <p className="text-xs text-slate-400 mt-2 line-clamp-2">{item.description}</p>
+                      </div>
+                      <div className="flex justify-between items-center mt-4">
+                        <button 
+                          onClick={() => handleNavigate(item.category, item.id)}
+                          className="px-3 py-1.5 bg-cyan-400 text-slate-950 text-xs font-bold rounded hover:bg-cyan-300 transition"
+                        >
+                          Launch
+                        </button>
+                        <button 
+                          onClick={() => setFavorites((prev) => prev.filter((id) => id !== item.id))}
+                          className="px-3 py-1.5 bg-white/5 border border-white/10 text-rose-400 text-xs font-bold rounded hover:bg-rose-500/10 transition"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <Star size={48} className="text-slate-700 animate-pulse mb-4" />
+                  <h3 className="text-base font-bold text-white">Your collection is empty</h3>
+                  <p className="text-xs text-slate-400 mt-2 max-w-sm">
+                    Browse the algorithms from the sidebar or catalog and click "Save Favorite" to build your custom learning list here.
+                  </p>
+                  <button 
+                    onClick={() => handleNavigate('Sorting')}
+                    className="mt-6 px-4 py-2 bg-cyan-400 text-slate-950 text-xs font-bold rounded hover:bg-cyan-300 transition"
+                  >
+                    Browse Algorithms
+                  </button>
+                </div>
+              )}
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-slate-950 text-slate-100">
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-[1000] bg-slate-950/60 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
+          <div onClick={(e) => e.stopPropagation()}>
+            <Sidebar mobile onClose={() => setMobileMenuOpen(false)} selected={selected.category} onSelect={(item) => handleNavigate(item)} />
+          </div>
+        </div>
+      )}
       <Sidebar selected={selected.category} onSelect={(item) => handleNavigate(item)} />
       <div className="flex min-w-0 flex-1 flex-col">
         <TopNavbar 
@@ -208,6 +353,7 @@ export default function App() {
           onFullscreen={fullscreen} 
           onScreenshot={screenshot} 
           onNavigate={handleNavigate} 
+          onMenu={() => setMobileMenuOpen(true)}
         />
         <main className="grid flex-1 gap-4 overflow-y-auto p-4 xl:grid-cols-[1fr_360px]">
           <section className="space-y-4">
@@ -219,7 +365,7 @@ export default function App() {
                 </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setFavorites((items) => items.includes(selected.id) ? items.filter((id) => id !== selected.id) : [selected.id, ...items])}
+                    onClick={() => setFavorites((items) => items.includes(selected.id) ? items.filter((id) => id !== selected.id) : Array.from(new Set([selected.id, ...items])))}
                     className="rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-slate-200 hover:bg-white/10"
                   >
                     {favorites.includes(selected.id) ? 'Saved' : 'Save Favorite'}
@@ -230,7 +376,15 @@ export default function App() {
                 </div>
               </div>
               
-              <div ref={workspaceRef}>
+              <div ref={workspaceRef} className="relative">
+                {isFullscreen && (
+                  <button 
+                    onClick={fullscreen} 
+                    className="absolute top-4 right-4 z-[999] rounded bg-slate-900/80 px-3 py-1.5 text-xs text-white border border-white/20 hover:bg-slate-950 transition"
+                  >
+                    Exit Fullscreen
+                  </button>
+                )}
                 <WorkspaceVisualizer category={selected.category} array={array} step={player.currentStep} />
               </div>
               
@@ -290,6 +444,7 @@ export default function App() {
               onApplyArray={applyArray}
               onShuffle={handleShuffle}
               onReverse={handleReverse}
+              onOperation={handleOperation}
               onPlay={player.play}
               onPause={player.pause}
               onStepForward={player.stepForward}

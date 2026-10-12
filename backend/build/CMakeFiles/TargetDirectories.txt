@@ -1,3 +1,0 @@
-C:/Users/Kritika/Desktop/gitHub/Sorting-Visualizer-Complete/backend/build/CMakeFiles/algorithm_studio.dir
-C:/Users/Kritika/Desktop/gitHub/Sorting-Visualizer-Complete/backend/build/CMakeFiles/ALL_BUILD.dir
-C:/Users/Kritika/Desktop/gitHub/Sorting-Visualizer-Complete/backend/build/CMakeFiles/ZERO_CHECK.dir

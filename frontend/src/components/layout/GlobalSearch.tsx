@@ -426,6 +426,7 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
 
   // References
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const modalContainerRef = useRef<HTMLDivElement>(null);
   const paletteInputRef = useRef<HTMLInputElement>(null);
 
@@ -455,11 +456,15 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
     return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [paletteOpen]);
 
-  // Keyboard shortcut listeners (Ctrl + K / Ctrl + P / Cmd + K)
+  // Ctrl/Cmd+K focuses the navbar search; Ctrl+P keeps the command palette shortcut.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey && (e.key.toLowerCase() === 'k' || e.key.toLowerCase() === 'p')) || 
-          (e.metaKey && e.key.toLowerCase() === 'k')) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setPaletteOpen(false);
+        setDropdownOpen(true);
+        searchInputRef.current?.focus();
+      } else if (e.ctrlKey && e.key.toLowerCase() === 'p') {
         e.preventDefault();
         setPaletteOpen((prev) => !prev);
       }
@@ -712,6 +717,7 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
         >
           <Search size={15} className="shrink-0 text-cyan-300" />
           <input
+            ref={searchInputRef}
             type="text"
             value={query}
             onFocus={() => setDropdownOpen(true)}
@@ -738,7 +744,7 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
           <div
             id="global-search-results"
             role="listbox"
-            className="search-dropdown absolute left-0 top-12 z-50 max-h-[460px] w-[min(28rem,calc(100vw-1.5rem))] overflow-y-auto rounded-xl border p-3.5 shadow-2xl animate-fade-in-down"
+            className="search-dropdown absolute left-0 top-full z-[100] mt-2 max-h-[min(70vh,32rem)] w-[min(28rem,calc(100vw-5rem))] max-w-[calc(100vw-5rem)] overflow-y-auto overscroll-contain rounded-xl border p-3.5 shadow-2xl shadow-black/40 animate-fade-in-down"
             style={{ backgroundColor: dark ? '#020617' : '#ffffff' }}
           >
             {/* Empty Search - Display Recent and Popular */}
@@ -810,14 +816,14 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
                           : 'bg-transparent border-transparent hover:bg-white/5'
                       }`}
                     >
-                      <div className="flex gap-2.5">
+                      <div className="flex min-w-0 gap-2.5">
                         <span className="mt-0.5 text-cyan-200">
                           {isAi ? <Sparkles size={14} className="text-amber-400" /> : '⚡'}
                         </span>
-                        <div>
+                        <div className="min-w-0">
                           <div className="text-xs font-semibold text-white flex items-center gap-1.5">
                             {item.name}
-                            <span className="text-[9px] text-slate-500 font-normal">in {item.category}</span>
+                            <span className="shrink-0 whitespace-nowrap rounded border border-white/10 bg-white/5 px-1.5 py-0.5 text-[9px] font-normal uppercase tracking-wider text-slate-400">{item.category}</span>
                           </div>
                           <div className="text-[10px] text-slate-400">{item.description}</div>
                         </div>
@@ -923,7 +929,7 @@ export const GlobalSearch = ({ dark, onTheme, setDark, onNavigate }: GlobalSearc
                 <div className="rounded-lg bg-white/5 p-2.5">
                   <h5 className="font-bold text-slate-300">Supported Shortcuts</h5>
                   <div className="mt-1 space-y-0.5">
-                    <div>Toggle Palette: <kbd className="text-cyan-200">Ctrl K</kbd> / <kbd className="text-cyan-200">Ctrl P</kbd></div>
+                    <div>Search: <kbd className="text-cyan-200">Ctrl K</kbd> · Palette: <kbd className="text-cyan-200">Ctrl P</kbd></div>
                     <div>Select & Launch: <kbd className="text-cyan-200">Enter</kbd></div>
                   </div>
                 </div>

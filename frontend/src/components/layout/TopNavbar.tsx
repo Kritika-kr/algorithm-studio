@@ -27,7 +27,7 @@ export const TopNavbar = ({
   onNavigate,
   onMenu
 }: TopNavbarProps) => (
-  <header className="flex h-16 min-w-0 items-center gap-3 border-b border-white/10 bg-slate-950/55 px-3 backdrop-blur-xl md:px-6">
+  <header className="relative z-[80] flex h-16 min-w-0 items-center gap-3 border-b border-white/10 bg-slate-950/55 px-3 backdrop-blur-xl md:px-6">
     <div className="flex min-w-0 flex-1 items-center gap-2">
       <button className="icon-button shrink-0 lg:hidden" title="Open navigation" onClick={onMenu}>
         <Menu size={17} />

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import fixtures from '../../../tests/fixtures/trace-cases.json';
+import { DEFAULT_LINKED_LIST_VALUES } from '../data/algorithms';
 import { runLocalAlgorithm } from './localAlgorithmRunner';
 
 describe('shared algorithm trace fixtures', () => {
@@ -11,6 +12,17 @@ describe('shared algorithm trace fixtures', () => {
     expect(response.steps.filter((step) => step.action === 'pointer').every((step) => step.pointerChange !== undefined)).toBe(true);
     expect(response.steps[response.steps.length - 1]?.snapshot).toEqual(expected);
     if (!operation) expect(response.steps[0]?.snapshot).toEqual(input);
+  });
+
+  it('uses the UI default list when the API-down request omitted its array', () => {
+    const response = runLocalAlgorithm('Linked List', 'linked-list', undefined, 42, '');
+    expect(response.steps).toHaveLength(6);
+    const expectedSteps = (fixtures.linkedListCases[0] as (typeof fixtures.linkedListCases)[number] & {
+      expectedSteps: Array<{ action: string; index: number; note: string; snapshot: number[] }>;
+    }).expectedSteps;
+    expect(response.steps.map(({ action, index, i, note, snapshot }) => ({ action, index, i, note, snapshot }))).toEqual(expectedSteps.map((step) => ({ ...step, i: step.index })));
+    expect(response.steps[0]?.snapshot).toEqual([...DEFAULT_LINKED_LIST_VALUES]);
+    expect(response.steps.every((step) => step.note !== 'linked-list operation step')).toBe(true);
   });
 
   it.each(fixtures.sortCases)('$algorithm sorts its input', ({ algorithm, input, expected }) => {

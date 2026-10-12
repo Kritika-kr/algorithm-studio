@@ -79,5 +79,16 @@ TEST(SharedFixtures, LinkedListDefaultAndOperationsKeepDescriptiveSnapshots) {
     }
     for (std::size_t index = 0; index < response.steps.size(); ++index) EXPECT_EQ(response.steps[index].action, test["expectedActions"][static_cast<Json::ArrayIndex>(index)].asString());
     EXPECT_EQ(response.steps.back().snapshot, ints(test["expected"]));
+    if (test.isMember("expectedSteps")) {
+      ASSERT_EQ(response.steps.size(), test["expectedSteps"].size());
+      for (std::size_t index = 0; index < response.steps.size(); ++index) {
+        const auto& expected = test["expectedSteps"][static_cast<Json::ArrayIndex>(index)];
+        EXPECT_EQ(response.steps[index].action, expected["action"].asString()) << index;
+        EXPECT_EQ(response.steps[index].index, expected["index"].asInt()) << index;
+        EXPECT_EQ(response.steps[index].i, expected["index"].asInt()) << index;
+        EXPECT_EQ(response.steps[index].note, expected["note"].asString()) << index;
+        EXPECT_EQ(response.steps[index].snapshot, ints(expected["snapshot"])) << index;
+      }
+    }
   }
 }

@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { DEFAULT_LINKED_LIST_VALUES } from '../../data/algorithms';
 import { AnimationStep } from '../../types/algorithm';
 
 interface StructureVisualizerProps {
@@ -22,7 +23,7 @@ export const StructureVisualizer = ({ mode, step }: StructureVisualizerProps) =>
 const active = (id: number, step?: AnimationStep) => step?.i === id || step?.node === `N${id + 1}`;
 
 const LinkedListView = ({ step }: { step?: AnimationStep }) => {
-  const values = step?.snapshot ?? [3, 7, 11, 15, 19];
+  const values = step?.snapshot ?? [...DEFAULT_LINKED_LIST_VALUES];
   const pointer = step?.pointerChange;
   const pointerLabel = (index: number | null) => index === null || index < 0 || index >= values.length ? 'null' : `node ${values[index]}`;
   return (

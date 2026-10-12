@@ -221,6 +221,8 @@ export const algorithms: AlgorithmInfo[] = [
 
 export const categories: AlgorithmCategory[] = ['Sorting', 'Searching', 'Linked List', 'Stack', 'Queue', 'Trees', 'Graphs', 'Dynamic Programming'];
 
+export const DEFAULT_LINKED_LIST_VALUES = [3, 7, 11, 15, 19] as const;
+
 export const defaultGraphNodes: GraphNode[] = [
   { id: 'A', x: 12, y: 22 },
   { id: 'B', x: 36, y: 14 },

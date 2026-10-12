@@ -15,7 +15,7 @@ import { useAnimationPlayer } from './hooks/useAnimationPlayer';
 import { requestAnimationSteps } from './services/algorithmApi';
 import { generateDataset } from './services/datasetService';
 import { AlgorithmCategory, GraphEdge, GraphNode, StepResponse } from './types/algorithm';
-import { defaultGraphEdges, defaultGraphNodes } from './data/algorithms';
+import { DEFAULT_LINKED_LIST_VALUES, defaultGraphEdges, defaultGraphNodes } from './data/algorithms';
 import { validateGraph } from './services/graphValidation';
 
 const firstByCategory = (category: AlgorithmCategory) => algorithms.find((item) => item.category === category) ?? algorithms[0];
@@ -72,7 +72,7 @@ export default function App() {
     steps: [], 
     stats: { comparisons: 0, swaps: 0, recursionDepth: 0, visitedNodes: 0, executionTimeMs: 0, memoryBytes: 0 } 
   });
-  const [structureValues, setStructureValues] = useState<Record<string, number[]>>({ 'Linked List': [3, 7, 11, 15, 19] });
+  const [structureValues, setStructureValues] = useState<Record<string, number[]>>({ 'Linked List': [...DEFAULT_LINKED_LIST_VALUES] });
   const [graphNodes, setGraphNodes] = useState<GraphNode[]>(() => defaultGraphNodes.map((node) => ({ ...node })));
   const [graphEdges, setGraphEdges] = useState<GraphEdge[]>(() => defaultGraphEdges.map((edge) => ({ ...edge })));
   const [graphDirected, setGraphDirected] = useState(false);
@@ -98,7 +98,9 @@ export default function App() {
   // contents between operations so push/pop and insert/delete compose correctly.
   useEffect(() => {
     const hasPersistentStructure = ['Linked List', 'Stack', 'Queue', 'Trees'].includes(selected.category);
-    const inputValues = hasPersistentStructure ? (structureValues[selected.category] ?? []) : array;
+    const inputValues = hasPersistentStructure
+      ? structureValues[selected.category] ?? (selected.category === 'Linked List' ? [...DEFAULT_LINKED_LIST_VALUES] : [])
+      : array;
     if (selected.category === 'Graphs' && validateGraph(selected.id, graphNodes, graphEdges, graphDirected)) {
       setResponse({ steps: [], stats: { comparisons: 0, swaps: 0, recursionDepth: 0, visitedNodes: 0, executionTimeMs: 0, memoryBytes: 0 } });
       return;

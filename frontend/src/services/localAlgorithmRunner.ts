@@ -1,5 +1,5 @@
 import { AlgorithmCategory, AlgorithmStats, AnimationStep, GraphEdge, GraphNode, StepResponse } from '../types/algorithm';
-import { defaultGraphEdges, defaultGraphNodes } from '../data/algorithms';
+import { DEFAULT_LINKED_LIST_VALUES, defaultGraphEdges, defaultGraphNodes } from '../data/algorithms';
 import { validateGraph } from './graphValidation';
 
 const emptyStats = {
@@ -288,8 +288,8 @@ const runSearching = (id: string, input: number[], target: number): StepResponse
   return completeResponse(steps, values, { ...stats, visitedNodes: visited.length });
 };
 
-const runLinkedList = (operation: string | undefined, target: number, input: number[]): StepResponse => {
-  const values = [...input];
+const runLinkedList = (operation: string | undefined, target: number, input?: number[]): StepResponse => {
+  const values = input === undefined ? [...DEFAULT_LINKED_LIST_VALUES] : [...input];
   const steps: AnimationStep[] = [];
   const command = (operation ?? '').replace(/-\d+$/, '') || 'traverse';
   const emit = (action: AnimationStep['action'], note: string, index = -1, pointerChange?: AnimationStep['pointerChange']) => {
@@ -351,9 +351,9 @@ const runLinkedList = (operation: string | undefined, target: number, input: num
   return completeResponse(steps, values, { ...emptyStats, visitedNodes: steps.filter((step) => step.action === 'visit' || step.action === 'found').length });
 };
 
-const runStructure = (category: AlgorithmCategory, id: string, operation?: string, target = 42, input: number[] = []): StepResponse => {
+const runStructure = (category: AlgorithmCategory, id: string, operation?: string, target = 42, input?: number[]): StepResponse => {
   if (category === 'Linked List') return runLinkedList(operation, target, input);
-  const values = input.length ? [...input] : category === 'Stack' ? [18, 31, 44] : category === 'Queue' ? [7, 14, 21] : [12, 24, 36, 48];
+  const values = input?.length ? [...input] : category === 'Stack' ? [18, 31, 44] : category === 'Queue' ? [7, 14, 21] : [12, 24, 36, 48];
   const steps: AnimationStep[] = [];
   const command = operation?.replace(/-\d+$/, '') ?? '';
   const selected = command.split('-')[0] as AnimationStep['action'] | undefined;
@@ -490,9 +490,9 @@ const runGraph = (id: string, graphNodes: GraphNode[] = defaultGraphNodes, graph
   });
 };
 
-export const runLocalAlgorithm = (category: AlgorithmCategory, id: string, array: number[], target: number, operation?: string, graphNodes?: GraphNode[], graphEdges?: GraphEdge[], directed?: boolean): StepResponse => {
-  if (category === 'Sorting') return runSorting(id, array);
-  if (category === 'Searching') return runSearching(id, array, target);
+export const runLocalAlgorithm = (category: AlgorithmCategory, id: string, array: number[] | undefined, target: number, operation?: string, graphNodes?: GraphNode[], graphEdges?: GraphEdge[], directed?: boolean): StepResponse => {
+  if (category === 'Sorting') return runSorting(id, array ?? []);
+  if (category === 'Searching') return runSearching(id, array ?? [], target);
   if (category === 'Graphs') {
     const nodes = graphNodes ?? defaultGraphNodes;
     const edges = graphEdges ?? defaultGraphEdges;
@@ -516,7 +516,7 @@ export const runLocalAlgorithm = (category: AlgorithmCategory, id: string, array
     return completeResponse(steps, values, { ...emptyStats, recursionDepth: 1 });
   }
   return completeResponse(
-    [{ action: 'complete', index: -1, i: -1, note: 'Backend connection is required for this visualization.', snapshot: [...array] }],
-    array
+    [{ action: 'complete', index: -1, i: -1, note: 'Backend connection is required for this visualization.', snapshot: [...(array ?? [])] }],
+    array ?? []
   );
 };

@@ -1,5 +1,9 @@
 # Algorithm Studio
 
+[![Algorithm Studio screenshot](docs/screenshot.png)](docs/README.md)
+
+[**Live demo**](https://kritika-kr.github.io/sorting-visualizer/)
+
 Algorithm Studio is an interactive learning app for exploring sorting, searching, data structures, graphs, and dynamic programming. It replays algorithms as animation steps with code highlights and run statistics.
 
 ## Features

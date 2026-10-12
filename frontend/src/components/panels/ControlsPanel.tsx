@@ -116,9 +116,9 @@ export const ControlsPanel = ({
             Reverse
           </button>
         </div>
-      ) : (
+      ) : algorithm.category !== 'Graphs' && algorithm.category !== 'Dynamic Programming' ? (
         <OperationButtons category={algorithm.category} onOperation={onOperation} />
-      )}
+      ) : null}
 
       {/* Target Input (e.g. for searching) */}
       <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -189,35 +189,37 @@ const Range = ({ label, value, min, max, reverse, onChange }: { label: string; v
 
 const operationSets: Record<string, Array<{ label: string; value: string }>> = {
   'Linked List': [
-    { label: 'Insert', value: 'insert' },
-    { label: 'Traverse', value: 'visit' },
-    { label: 'Delete', value: 'delete' }
+    { label: 'Insert tail', value: 'insert-tail' },
+    { label: 'Insert head', value: 'insert-head' },
+    { label: 'Search', value: 'search' },
+    { label: 'Delete head', value: 'delete-head' },
+    { label: 'Delete tail', value: 'delete-tail' },
+    { label: 'Reverse', value: 'reverse' },
+    { label: 'Traverse', value: 'visit' }
   ],
   Stack: [
     { label: 'Push', value: 'push' },
     { label: 'Peek', value: 'peek' },
-    { label: 'Pop', value: 'pop' }
+    { label: 'Pop', value: 'pop' },
+    { label: 'Is empty?', value: 'is-empty' },
+    { label: 'Clear', value: 'clear' }
   ],
   Queue: [
     { label: 'Enqueue', value: 'enqueue' },
     { label: 'Peek', value: 'peek' },
-    { label: 'Dequeue', value: 'dequeue' }
+    { label: 'Dequeue', value: 'dequeue' },
+    { label: 'Is empty?', value: 'is-empty' },
+    { label: 'Clear', value: 'clear' }
   ],
   Trees: [
     { label: 'Insert', value: 'insert' },
-    { label: 'Search', value: 'visit' },
-    { label: 'Delete', value: 'delete' }
+    { label: 'Search', value: 'search' },
+    { label: 'Delete', value: 'delete' },
+    { label: 'Inorder', value: 'inorder' },
+    { label: 'Preorder', value: 'preorder' },
+    { label: 'Postorder', value: 'postorder' },
+    { label: 'Level order', value: 'levelorder' }
   ],
-  Graphs: [
-    { label: 'Visit', value: 'visit' },
-    { label: 'Edge', value: 'edge' },
-    { label: 'Relax', value: 'relax' }
-  ],
-  'Dynamic Programming': [
-    { label: 'Fill', value: 'overwrite' },
-    { label: 'Step', value: 'highlight' },
-    { label: 'Reset', value: 'complete' }
-  ]
 };
 
 const OperationButtons = ({ category, onOperation }: { category: string; onOperation: (operation: string) => void }) => {

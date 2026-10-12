@@ -16,6 +16,16 @@ import { generateDataset } from './services/datasetService';
 import { AlgorithmCategory, StepResponse } from './types/algorithm';
 
 const firstByCategory = (category: AlgorithmCategory) => algorithms.find((item) => item.category === category) ?? algorithms[0];
+type AppView = AlgorithmCategory | 'Home' | 'Compare' | 'Favorites';
+
+const readStoredStringList = (key: string): string[] => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) ?? '[]');
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+  } catch (_) {
+    return [];
+  }
+};
 
 export default function App() {
   const [dark, setDark] = useState(() => {
@@ -25,7 +35,7 @@ export default function App() {
     } catch (_) {}
     return true;
   });
-  const [view, setView] = useState<AlgorithmCategory | 'Home' | 'Compare' | 'Favorites'>('Home');
+  const [view, setView] = useState<AppView>('Home');
   const [selectedId, setSelectedId] = useState('bubble-sort');
   
   // Dataset and Input States
@@ -59,9 +69,10 @@ export default function App() {
     steps: [], 
     stats: { comparisons: 0, swaps: 0, recursionDepth: 0, visitedNodes: 0, executionTimeMs: 0, memoryBytes: 0 } 
   });
+  const [structureValues, setStructureValues] = useState<Record<string, number[]>>({});
   
-  const [favorites, setFavorites] = useState<string[]>(() => JSON.parse(localStorage.getItem('algorithm-favorites') ?? '[]') as string[]);
-  const [recent, setRecent] = useState<string[]>(() => JSON.parse(localStorage.getItem('algorithm-recent') ?? '[]') as string[]);
+  const [favorites, setFavorites] = useState<string[]>(() => readStoredStringList('algorithm-favorites'));
+  const [recent, setRecent] = useState<string[]>(() => readStoredStringList('algorithm-recent'));
   const workspaceRef = useRef<HTMLDivElement>(null);
 
   const selected = useMemo(() => algorithms.find((item) => item.id === selectedId) ?? algorithms[0], [selectedId]);
@@ -76,18 +87,29 @@ export default function App() {
     } catch (_) {}
   }, [dark]);
 
-  // Fetch steps when input array changes
+  // Fetch steps when input or selected algorithm changes. Keep data-structure
+  // contents between operations so push/pop and insert/delete compose correctly.
   useEffect(() => {
-    requestAnimationSteps({ id: selected.id, category: selected.category, array, target, operation })
-      .then(setResponse)
+    const hasPersistentStructure = ['Linked List', 'Stack', 'Queue', 'Trees'].includes(selected.category);
+    const inputValues = hasPersistentStructure ? (structureValues[selected.category] ?? []) : array;
+    requestAnimationSteps({ id: selected.id, category: selected.category, array: inputValues, target, operation })
+      .then((result) => {
+        setResponse(result);
+        if (hasPersistentStructure) {
+          const finalValues = [...(result.steps[result.steps.length - 1]?.snapshot ?? [])];
+          setStructureValues((current) => ({ ...current, [selected.category]: finalValues }));
+        }
+      })
       .catch(() => setResponse({ 
         steps: [], 
         stats: { comparisons: 0, swaps: 0, recursionDepth: 0, visitedNodes: 0, executionTimeMs: 0, memoryBytes: 0 } 
       }));
 
-    const nextRecent = [selected.id, ...recent.filter((id) => id !== selected.id)].slice(0, 6);
-    setRecent(nextRecent);
-    localStorage.setItem('algorithm-recent', JSON.stringify(nextRecent));
+    setRecent((items) => {
+      const nextRecent = [selected.id, ...items.filter((id) => id !== selected.id)].slice(0, 6);
+      localStorage.setItem('algorithm-recent', JSON.stringify(nextRecent));
+      return nextRecent;
+    });
   }, [array, selected.id, selected.category, target, operation]);
 
   // Handle autostart when response steps load
@@ -96,7 +118,7 @@ export default function App() {
       player.play();
       setAutoPlayNext(false);
     }
-  }, [response, autoPlayNext]);
+  }, [autoPlayNext, player.play, response.steps.length]);
 
   useEffect(() => {
     localStorage.setItem('algorithm-favorites', JSON.stringify(favorites));
@@ -119,11 +141,11 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [player]);
+  }, [player.play, player.pause, player.playing, player.reset, player.stepBack, player.stepForward]);
 
   // Unified global navigation handler
   const handleNavigate = (
-    nextView: AlgorithmCategory | 'Home' | 'Compare' | 'Favorites',
+    nextView: AppView,
     nextId?: string,
     leftId?: string,
     rightId?: string,
@@ -171,11 +193,12 @@ export default function App() {
   };
 
   const applyArray = () => {
-    const parsed = customArray
+    const values = customArray
       .split(',')
-      .map((value) => Number(value.trim()))
-      .filter((value) => Number.isFinite(value) && value > 0);
-    if (parsed.length > 1) {
+      .map((value) => value.trim())
+      .filter(Boolean);
+    const parsed = values.map(Number);
+    if (parsed.length > 0 && parsed.every(Number.isSafeInteger)) {
       setArray(parsed);
       setSize(parsed.length);
     }
@@ -202,38 +225,19 @@ export default function App() {
 
   if (view === 'Home') {
     return (
-      <div className="flex h-screen bg-slate-950 text-slate-100">
-        {mobileMenuOpen && (
-          <div className="fixed inset-0 z-[1000] bg-slate-950/60 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
-            <div onClick={(e) => e.stopPropagation()}>
-              <Sidebar mobile onClose={() => setMobileMenuOpen(false)} selected="Home" onSelect={(item) => handleNavigate(item)} />
-            </div>
-          </div>
-        )}
-        <Sidebar selected={view} onSelect={(item) => handleNavigate(item)} />
-        <div className="flex min-w-0 flex-1 flex-col">
-          <TopNavbar 
-            dark={dark} 
-            onTheme={() => setDark((value) => !value)} 
-            setDark={setDark} 
-            onFullscreen={fullscreen} 
-            onScreenshot={screenshot} 
-            onNavigate={handleNavigate} 
-            onMenu={() => setMobileMenuOpen(true)}
-          />
-          <LandingPage 
-            onStart={() => handleNavigate('Sorting')} 
-            onCompare={() => handleNavigate('Compare')} 
-            onCategory={(cat) => handleNavigate(cat)} 
-          />
-        </div>
-      </div>
+      <LandingPage
+        dark={dark}
+        onTheme={() => setDark((value) => !value)}
+        onStart={() => handleNavigate('Sorting')}
+        onCompare={() => handleNavigate('Compare')}
+        onCategory={(cat) => handleNavigate(cat)}
+      />
     );
   }
 
   if (view === 'Compare') {
     return (
-      <div className="flex h-screen bg-slate-950 text-slate-100">
+      <div className="flex h-screen w-full min-w-0 overflow-x-hidden bg-slate-950 text-slate-100">
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-[1000] bg-slate-950/60 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
             <div onClick={(e) => e.stopPropagation()}>
@@ -261,15 +265,15 @@ export default function App() {
   if (view === 'Favorites') {
     const favoritedItems = algorithms.filter((item) => favorites.includes(item.id));
     return (
-      <div className="flex h-screen bg-slate-950 text-slate-100">
+      <div className="flex h-screen w-full min-w-0 overflow-x-hidden bg-slate-950 text-slate-100">
         {mobileMenuOpen && (
           <div className="fixed inset-0 z-[1000] bg-slate-950/60 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
             <div onClick={(e) => e.stopPropagation()}>
-              <Sidebar mobile onClose={() => setMobileMenuOpen(false)} selected="Favorites" onSelect={(item) => handleNavigate(item as any)} />
+              <Sidebar mobile onClose={() => setMobileMenuOpen(false)} selected="Favorites" onSelect={(item) => handleNavigate(item)} />
             </div>
           </div>
         )}
-        <Sidebar selected="Favorites" onSelect={(item) => handleNavigate(item as any)} />
+        <Sidebar selected="Favorites" onSelect={(item) => handleNavigate(item)} />
         <div className="flex min-w-0 flex-1 flex-col">
           <TopNavbar 
             dark={dark} 
@@ -336,7 +340,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100">
+    <div className="flex h-screen w-full min-w-0 overflow-x-hidden bg-slate-950 text-slate-100">
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-[1000] bg-slate-950/60 backdrop-blur-sm lg:hidden" onClick={() => setMobileMenuOpen(false)}>
           <div onClick={(e) => e.stopPropagation()}>

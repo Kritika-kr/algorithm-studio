@@ -10,8 +10,8 @@ StepResponse AlgorithmService::searching(const std::string& algorithm, const std
   return searchingAlgorithms_.run(algorithm, values, target);
 }
 
-StepResponse AlgorithmService::structures(const std::string& algorithm) const {
-  return structureAlgorithms_.run(algorithm);
+StepResponse AlgorithmService::structures(const std::string& category, const std::string& operation, const std::vector<int>& values, int target) const {
+  return structureAlgorithms_.run(category, operation, values, target);
 }
 
 StepResponse AlgorithmService::graphs(const std::string& algorithm) const {

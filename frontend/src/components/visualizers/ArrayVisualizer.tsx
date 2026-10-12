@@ -27,7 +27,7 @@ export const ArrayVisualizer = ({ array, step }: ArrayVisualizerProps) => {
       {values.map((value, index) => (
         <motion.div
           layout
-          key={`${index}-${value}`}
+          key={index}
           className="flex min-w-0 flex-1 flex-col items-center justify-end gap-2"
           title={`${index}: ${value}`}
         >

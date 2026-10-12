@@ -9,6 +9,13 @@ export interface EducationalCompareInfo {
   };
   spaceComplexity: string;
   supportedOperations: string[];
+  operationComparisons: Array<{
+    operation: string;
+    best: string;
+    average: string;
+    worst: string;
+    notes: string;
+  }>;
   advantages: string[];
   disadvantages: string[];
   realWorldApplications: string[];
@@ -33,6 +40,13 @@ export const compareData: Record<string, EducationalCompareInfo> = {
       'Shift / Insert elements',
       'Partition around pivot',
       'Merge sorted partitions'
+    ],
+    operationComparisons: [
+      { operation: 'Compare pair', best: 'O(1)', average: 'O(1)', worst: 'O(1)', notes: 'Primitive operation used by comparison sorts.' },
+      { operation: 'Swap two values', best: 'O(1)', average: 'O(1)', worst: 'O(1)', notes: 'Constant write cost, but many swaps increase real runtime.' },
+      { operation: 'Insertion pass', best: 'O(1)', average: 'O(n)', worst: 'O(n)', notes: 'Fast when the next value is already near its final position.' },
+      { operation: 'Partition', best: 'O(n)', average: 'O(n)', worst: 'O(n)', notes: 'Quick Sort scans one segment around a pivot.' },
+      { operation: 'Merge partitions', best: 'O(n)', average: 'O(n)', worst: 'O(n)', notes: 'Merge Sort writes into temporary storage for stable merging.' }
     ],
     advantages: [
       'Enables sub-linear searching (e.g., Binary Search) on lists',
@@ -68,6 +82,12 @@ export const compareData: Record<string, EducationalCompareInfo> = {
       'Shift bounds pointers',
       'Interpolate position index'
     ],
+    operationComparisons: [
+      { operation: 'Linear probe', best: 'O(1)', average: 'O(n)', worst: 'O(n)', notes: 'Works on unsorted data; cost grows with visited positions.' },
+      { operation: 'Binary probe', best: 'O(1)', average: 'O(log n)', worst: 'O(log n)', notes: 'Requires sorted data and random access.' },
+      { operation: 'Jump block scan', best: 'O(1)', average: 'O(sqrt n)', worst: 'O(sqrt n)', notes: 'Balances block jumps with a short linear scan.' },
+      { operation: 'Interpolation probe', best: 'O(1)', average: 'O(log log n)', worst: 'O(n)', notes: 'Excellent on uniform numeric data, weak on skewed values.' }
+    ],
     advantages: [
       'Logarithmic search allows fast item lookups on massive datasets',
       'Can run in-place without memory allocation overhead',
@@ -100,6 +120,16 @@ export const compareData: Record<string, EducationalCompareInfo> = {
       'Delete from Head / Tail',
       'Search element by value',
       'Traverse elements sequentially'
+    ],
+    operationComparisons: [
+      { operation: 'Access by index', best: 'O(1)', average: 'O(n)', worst: 'O(n)', notes: 'Head access is constant; arbitrary index needs pointer hops.' },
+      { operation: 'Search by value', best: 'O(1)', average: 'O(n)', worst: 'O(n)', notes: 'Must scan nodes until a match is found.' },
+      { operation: 'Insert at head', best: 'O(1)', average: 'O(1)', worst: 'O(1)', notes: 'Relinks the new node before the current head.' },
+      { operation: 'Insert at tail', best: 'O(1)', average: 'O(1) with tail pointer', worst: 'O(n) without tail pointer', notes: 'Tail pointer changes append from scan to constant time.' },
+      { operation: 'Insert after known node', best: 'O(1)', average: 'O(1)', worst: 'O(1)', notes: 'No shifting; only pointer rewiring.' },
+      { operation: 'Delete head', best: 'O(1)', average: 'O(1)', worst: 'O(1)', notes: 'Move head to the next node.' },
+      { operation: 'Delete by value', best: 'O(1)', average: 'O(n)', worst: 'O(n)', notes: 'Search dominates unless the node pointer is already known.' },
+      { operation: 'Traverse all nodes', best: 'O(n)', average: 'O(n)', worst: 'O(n)', notes: 'Every node must be visited in sequence.' }
     ],
     advantages: [
       'Dynamic size allocates memory incrementally on demand',
@@ -135,6 +165,13 @@ export const compareData: Record<string, EducationalCompareInfo> = {
       'Peek (inspect top element without removing)',
       'IsEmpty (check if stack has elements)'
     ],
+    operationComparisons: [
+      { operation: 'Push', best: 'O(1)', average: 'O(1)', worst: 'O(1)', notes: 'Append or relink at the top.' },
+      { operation: 'Pop', best: 'O(1)', average: 'O(1)', worst: 'O(1)', notes: 'Remove only the current top item.' },
+      { operation: 'Peek', best: 'O(1)', average: 'O(1)', worst: 'O(1)', notes: 'Reads the top without mutation.' },
+      { operation: 'Search', best: 'O(1)', average: 'O(n)', worst: 'O(n)', notes: 'Stacks do not support direct middle access.' },
+      { operation: 'IsEmpty / Size', best: 'O(1)', average: 'O(1)', worst: 'O(1)', notes: 'Constant when count is tracked.' }
+    ],
     advantages: [
       'Extremely fast, guaranteed O(1) operations',
       'Prevents data corruption by restricting arbitrary access',
@@ -169,6 +206,13 @@ export const compareData: Record<string, EducationalCompareInfo> = {
       'Front / Peek (inspect front element)',
       'Size / IsEmpty (verify active queue count)'
     ],
+    operationComparisons: [
+      { operation: 'Enqueue', best: 'O(1)', average: 'O(1)', worst: 'O(1)', notes: 'Add at rear with a rear pointer or circular index.' },
+      { operation: 'Dequeue', best: 'O(1)', average: 'O(1)', worst: 'O(1)', notes: 'Remove from front without shifting when implemented correctly.' },
+      { operation: 'Front / Peek', best: 'O(1)', average: 'O(1)', worst: 'O(1)', notes: 'Read only the front element.' },
+      { operation: 'Search', best: 'O(1)', average: 'O(n)', worst: 'O(n)', notes: 'Requires scanning in queue order.' },
+      { operation: 'Circular resize', best: 'O(n)', average: 'O(n)', worst: 'O(n)', notes: 'Only needed when a dynamic array queue grows.' }
+    ],
     advantages: [
       'Ensures fairness by handling items in strict chronological order',
       'Constant-time O(1) operations',
@@ -201,6 +245,13 @@ export const compareData: Record<string, EducationalCompareInfo> = {
       'Delete Node',
       'Search Node Key',
       'Traverse (Pre-order, In-order, Post-order)'
+    ],
+    operationComparisons: [
+      { operation: 'Search key', best: 'O(1)', average: 'O(log n)', worst: 'O(n)', notes: 'Root hit is constant; skewed trees degrade to list behavior.' },
+      { operation: 'Insert node', best: 'O(1)', average: 'O(log n)', worst: 'O(n)', notes: 'Cost follows tree height.' },
+      { operation: 'Delete node', best: 'O(1)', average: 'O(log n)', worst: 'O(n)', notes: 'May need successor/predecessor replacement.' },
+      { operation: 'Min / Max lookup', best: 'O(1)', average: 'O(log n)', worst: 'O(n)', notes: 'Walk leftmost or rightmost chain.' },
+      { operation: 'Traversal', best: 'O(n)', average: 'O(n)', worst: 'O(n)', notes: 'Every node is visited exactly once.' }
     ],
     advantages: [
       'Hierarchical representation of folder structures and nested data',
@@ -236,6 +287,14 @@ export const compareData: Record<string, EducationalCompareInfo> = {
       'Find adjacent neighbors',
       'Shortest Path / Minimum Spanning Tree traversal'
     ],
+    operationComparisons: [
+      { operation: 'Add vertex', best: 'O(1)', average: 'O(1)', worst: 'O(1)', notes: 'Append an empty adjacency list or matrix row marker.' },
+      { operation: 'Add edge', best: 'O(1)', average: 'O(1)', worst: 'O(1)', notes: 'Adjacency list insertion is constant for unsorted neighbors.' },
+      { operation: 'Remove vertex', best: 'O(V + E)', average: 'O(V + E)', worst: 'O(V + E)', notes: 'All references to the vertex must be removed.' },
+      { operation: 'Find neighbors', best: 'O(1)', average: 'O(deg(v))', worst: 'O(V)', notes: 'Adjacency list cost depends on vertex degree.' },
+      { operation: 'BFS / DFS traversal', best: 'O(V + E)', average: 'O(V + E)', worst: 'O(V + E)', notes: 'Visits vertices and inspects reachable edges.' },
+      { operation: 'Shortest path', best: 'O(E log V)', average: 'O(E log V)', worst: 'O(E log V)', notes: 'Typical Dijkstra with a priority queue.' }
+    ],
     advantages: [
       'Can model any complex network (social media, maps, electricity grids)',
       'Highly flexible node connections with weights',
@@ -269,6 +328,13 @@ export const compareData: Record<string, EducationalCompareInfo> = {
       'Formulate state transition recurrence relations',
       'Lookup subproblem states (memo)',
       'Tabulate subproblems iteratively'
+    ],
+    operationComparisons: [
+      { operation: 'State lookup', best: 'O(1)', average: 'O(1)', worst: 'O(1)', notes: 'Array or map lookup after the state key is known.' },
+      { operation: 'State transition', best: 'O(1)', average: 'Depends on choices', worst: 'Depends on choices', notes: 'Cost is driven by how many candidate transitions are evaluated.' },
+      { operation: 'Memoized recursion', best: 'O(states)', average: 'O(states * transitions)', worst: 'O(states * transitions)', notes: 'Each unique state is solved once.' },
+      { operation: 'Tabulation fill', best: 'O(states)', average: 'O(states * transitions)', worst: 'O(states * transitions)', notes: 'Bottom-up loops fill the full required table.' },
+      { operation: 'Space optimization', best: 'O(1)', average: 'O(active states)', worst: 'O(states)', notes: 'Rolling arrays work only when old states are no longer needed.' }
     ],
     advantages: [
       'Saves exponential O(2ⁿ) execution time by reducing to polynomial O(n) bounds',

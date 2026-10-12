@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AlgorithmInfo, AnimationStep } from '../../types/algorithm';
 import { educationalData } from '../../data/educationalData';
+import { compareData } from '../../data/compareData';
 import { BookOpen, Code2, HelpCircle, Terminal } from 'lucide-react';
 
 interface ExplanationPanelProps {
@@ -94,6 +95,7 @@ export const ExplanationPanel = ({ algorithm, step }: ExplanationPanelProps) => 
   };
 
   const activeLine = step?.line || 0;
+  const operationInfo = compareData[algorithm.category];
 
   return (
     <section className="glass-panel overflow-hidden border border-white/10 bg-slate-950/70 p-4 shadow-xl backdrop-blur-md">
@@ -174,6 +176,36 @@ export const ExplanationPanel = ({ algorithm, step }: ExplanationPanelProps) => 
                 </div>
               </div>
             </div>
+
+            {operationInfo && (
+              <div>
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-cyan-200">Operation Cost Comparison</h4>
+                <div className="mt-2 overflow-x-auto rounded-lg border border-white/5 bg-slate-900/40">
+                  <table className="w-full min-w-[620px] text-left text-xs">
+                    <thead className="border-b border-white/10 bg-white/5 text-[10px] uppercase tracking-wider text-slate-400">
+                      <tr>
+                        <th className="px-3 py-2">Operation</th>
+                        <th className="px-3 py-2">Best</th>
+                        <th className="px-3 py-2">Average</th>
+                        <th className="px-3 py-2">Worst</th>
+                        <th className="px-3 py-2">Note</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5 text-slate-300">
+                      {operationInfo.operationComparisons.map((row) => (
+                        <tr key={row.operation} className="align-top">
+                          <td className="px-3 py-2 font-semibold text-white">{row.operation}</td>
+                          <td className="px-3 py-2 font-mono text-emerald-300">{row.best}</td>
+                          <td className="px-3 py-2 font-mono text-cyan-200">{row.average}</td>
+                          <td className="px-3 py-2 font-mono text-rose-300">{row.worst}</td>
+                          <td className="px-3 py-2 leading-5 text-slate-400">{row.notes}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -1,136 +1,30 @@
 # Algorithm Studio
 
-A modern full-stack algorithm learning platform rebuilt from the original sorting visualizer.
-
-## Stack
-
-- Frontend: React, TypeScript, Tailwind CSS, Framer Motion, Vite
-- Backend: C++20, Drogon
-- Communication: REST APIs returning animation steps
-- Build: CMake for backend, Vite for frontend
-
-## Project Structure
-
-```text
-frontend/
-  src/components/layout
-  src/components/panels
-  src/components/visualizers
-  src/data
-  src/hooks
-  src/services
-  src/types
-
-backend/
-  controllers/
-  algorithms/
-  services/
-  middleware/
-  models/
-  utils/
-```
-
-## Frontend
-
-```bash
-npm install
-npm run start
-```
-
-The Vite app runs on `http://localhost:5173` and proxies `/api` to the Drogon backend on port `8080`.
-
-## Backend
-
-Install Drogon and CMake, then run:
-
-```bash
-npm run backend:configure
-npm run backend:build
-./backend/build/algorithm_studio
-```
-
-Health endpoint:
-
-```bash
-GET http://localhost:8080/api/health
-```
-
-Example animation endpoint:
-
-```bash
-POST http://localhost:8080/api/algorithms/sorting/quick-sort
-Content-Type: application/json
-
-{
-  "array": [42, 17, 83, 9, 31],
-  "target": 31
-}
-```
-
-Response shape:
-
-```json
-{
-  "steps": [
-    { "action": "compare", "i": 2, "j": 3, "line": 3, "note": "Compare two values" },
-    { "action": "swap", "i": 2, "j": 3, "line": 4, "note": "Swap two values" }
-  ],
-  "stats": {
-    "comparisons": 1,
-    "swaps": 1,
-    "recursionDepth": 0,
-    "visitedNodes": 0,
-    "executionTimeMs": 2,
-    "memoryBytes": 168
-  }
-}
-```
+Algorithm Studio is an interactive learning app for exploring sorting, searching, data structure, graph, and dynamic programming algorithms. It replays an algorithm as animation steps and shows the active step, code, and run statistics. The comparison workspace can play two algorithms side by side.
 
 ## Features
 
-- Professional landing page, sidebar navigation, top navbar, dashboard-style workspace
-- Sorting, searching, linked list, stack, queue, BST/tree, graph, and DP categories
-- Backend-style animation step contract with frontend fallback generator for offline development
-- Backend-generated animation step contract for all algorithm execution
-- Compare Algorithms mode with synchronized side-by-side playback, independent speed controls, live winner metrics, and educational result explanation
-- Code panel with C++, Java, Python, and JavaScript snippets
-- Explanation panel with complexity, applications, advantages, and disadvantages
-- Statistics for comparisons, swaps, recursion depth, visited nodes, execution time, and estimated memory
-- Dark/light theme, fullscreen visualization, screenshots, keyboard shortcuts, favorites, and recently viewed algorithms
+- Sorting and searching visualizations with dataset controls and custom arrays
+- Bubble, selection, insertion, merge, quick, heap, shell, cocktail, and counting sort; linear, binary, jump, interpolation, exponential, and ternary search
+- Linked list insert-at-head/tail, search, delete-at-head/tail, reverse, and traversal traces
+- Stack push/pop/peek/clear/empty checks and queue enqueue/dequeue/peek/clear/empty checks
+- Tree traversal and graph algorithm visualizations (BFS, DFS, Dijkstra, Prim, Kruskal, topological sort), plus a Fibonacci dynamic-programming table
+- Step, pause, resume, reset, speed, and timeline controls
+- Side by side comparison for algorithms in the same category
+- Complexity explanations and example code in C++, Java, Python, and JavaScript
+- Dark and light themes, favorites, recent algorithms, fullscreen view, and screenshots
 
-Keyboard shortcuts:
+## Technology
 
-- Space: play/pause
-- ArrowRight: step forward
-- ArrowLeft: step backward
-- R: reset
+- Frontend: React 18, TypeScript, Vite, Tailwind CSS, and Framer Motion
+- Backend: C++20, Drogon, and CMake
+- Backend API: JSON endpoints under `/api`
 
-## Comparison Mode
+## Backend algorithm coverage
 
-Open `Compare` from the landing page, sidebar, or workspace header.
+- Sorting: bubble, selection, insertion, merge, quick, heap, shell, cocktail, and counting sort
+- Searching: linear, binary, jump, interpolation, exponential, and ternary search
+- Graphs: BFS, DFS, Dijkstra, Prim, Kruskal, and topological sort over the built-in sample graph
+- Structures: linked-list, stack, queue, BST traversal/mutation, and Fibonacci operations
 
-Supported examples:
-
-- Bubble Sort vs Quick Sort
-- Merge Sort vs Heap Sort
-- Linear Search vs Binary Search
-- BFS vs DFS
-
-The comparison workspace runs two independent animation players on the same input. Use `Start Both`, `Pause Both`, `Reset Both`, and `Step Both` for synchronized playback, or use each panel's local controls and speed slider independently. `Lock Speeds` keeps both players at the same playback speed.
-
-## Backend Contract
-
-The frontend expects the backend to return animation steps. Local algorithm fallback generation has been removed from the production request path.
-
-Search response steps include structured search fields:
-
-```json
-{
-  "action": "compare",
-  "index": 5,
-  "visited": [0, 2, 5],
-  "found": false,
-  "line": 3,
-  "note": "Probe midpoint"
-}
-```
+Send `array`, `target`, and `operation` fields in the JSON request body for structure operations. The frontend requests backend traces for each category and falls back to a local trace if the API is unavailable.

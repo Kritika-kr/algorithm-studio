@@ -660,6 +660,35 @@ const EducationalColumn = ({ info, moduleName, accentColor, borderClass, headerT
         </div>
       </div>
 
+      {/* Operation Cost Matrix */}
+      <div className="space-y-2">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Operation Cost Comparison</h3>
+        <div className="overflow-x-auto rounded-lg border border-white/5 bg-slate-900/40">
+          <table className="w-full min-w-[560px] text-left text-xs">
+            <thead className="border-b border-white/10 bg-white/5 text-[10px] uppercase tracking-wider text-slate-400">
+              <tr>
+                <th className="px-3 py-2">Operation</th>
+                <th className="px-3 py-2">Best</th>
+                <th className="px-3 py-2">Average</th>
+                <th className="px-3 py-2">Worst</th>
+                <th className="px-3 py-2">Practical Note</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5 text-slate-300">
+              {info.operationComparisons.map((row) => (
+                <tr key={row.operation} className="align-top">
+                  <td className="px-3 py-2 font-semibold text-white">{row.operation}</td>
+                  <td className="px-3 py-2 font-mono text-emerald-300">{row.best}</td>
+                  <td className="px-3 py-2 font-mono text-cyan-200">{row.average}</td>
+                  <td className="px-3 py-2 font-mono text-rose-300">{row.worst}</td>
+                  <td className="px-3 py-2 leading-5 text-slate-400">{row.notes}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       {/* Pros & Cons */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-1.5">

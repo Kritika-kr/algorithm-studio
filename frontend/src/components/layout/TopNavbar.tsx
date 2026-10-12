@@ -27,9 +27,9 @@ export const TopNavbar = ({
   onNavigate,
   onMenu
 }: TopNavbarProps) => (
-  <header className="flex h-16 items-center justify-between border-b border-white/10 bg-slate-950/55 px-4 backdrop-blur-xl md:px-6">
-    <div className="flex items-center gap-2">
-      <button className="icon-button lg:hidden" title="Open navigation" onClick={onMenu}>
+  <header className="flex h-16 min-w-0 items-center gap-3 border-b border-white/10 bg-slate-950/55 px-3 backdrop-blur-xl md:px-6">
+    <div className="flex min-w-0 flex-1 items-center gap-2">
+      <button className="icon-button shrink-0 lg:hidden" title="Open navigation" onClick={onMenu}>
         <Menu size={17} />
       </button>
       <GlobalSearch 
@@ -39,7 +39,7 @@ export const TopNavbar = ({
         onNavigate={onNavigate} 
       />
     </div>
-    <div className="flex items-center gap-2">
+    <div className="flex shrink-0 items-center gap-1.5 md:gap-2">
       <button className="icon-button" title="Favorite algorithm" onClick={() => onNavigate('Favorites')}>
         <Star size={17} />
       </button>

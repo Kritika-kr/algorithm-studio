@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <functional>
+#include <limits>
+#include <map>
 
 namespace studio {
 
@@ -110,6 +112,72 @@ StepResponse SortingAlgorithms::run(const std::string& algorithm, std::vector<in
       swapValues(0, end);
       emit("mark-sorted", end, -1, 7, "Extract max");
       heapify(end, 0);
+    }
+  } else if (algorithm == "shell-sort") {
+    for (int gap = static_cast<int>(values.size()) / 2; gap > 0; gap /= 2) {
+      for (int i = gap; i < static_cast<int>(values.size()); ++i) {
+        const int value = values[i];
+        int j = i;
+        while (j >= gap) {
+          compare(j - gap, j);
+          if (values[j - gap] <= value) break;
+          values[j] = values[j - gap];
+          emit("overwrite", j, -1, 4, "Shift value by the current gap");
+          j -= gap;
+        }
+        values[j] = value;
+        emit("overwrite", j, -1, 4, "Insert value in its gapped position");
+      }
+    }
+  } else if (algorithm == "cocktail-sort") {
+    int start = 0;
+    int end = static_cast<int>(values.size()) - 1;
+    bool changed = true;
+    while (start < end && changed) {
+      changed = false;
+      for (int i = start; i < end; ++i) {
+        compare(i, i + 1);
+        if (values[i] > values[i + 1]) { swapValues(i, i + 1); changed = true; }
+      }
+      --end;
+      for (int i = end; i > start; --i) {
+        compare(i - 1, i);
+        if (values[i - 1] > values[i]) { swapValues(i - 1, i); changed = true; }
+      }
+      ++start;
+    }
+  } else if (algorithm == "counting-sort") {
+    if (!values.empty()) {
+      const auto bounds = std::minmax_element(values.begin(), values.end());
+      const int minimum = *bounds.first;
+      const int maximum = *bounds.second;
+      const long long range = static_cast<long long>(maximum) - minimum + 1;
+      // Bound auxiliary memory for untrusted inputs; sparse counting handles large ranges.
+      if (range <= 1'000'000) {
+        std::vector<int> counts(static_cast<std::size_t>(range), 0);
+        for (int i = 0; i < static_cast<int>(values.size()); ++i) {
+          ++counts[static_cast<std::size_t>(static_cast<long long>(values[i]) - minimum)];
+          ++response.stats.comparisons;
+          emit("visit", i, -1, 2, "Count value frequency");
+        }
+        int out = 0;
+        for (std::size_t offset = 0; offset < counts.size(); ++offset) {
+          while (counts[offset] > 0) {
+            --counts[offset];
+            values[out] = static_cast<int>(static_cast<long long>(minimum) + offset);
+            emit("overwrite", out, -1, 5, "Write values in sorted order");
+            ++out;
+          }
+        }
+      } else {
+        std::map<int, int> counts;
+        for (int i = 0; i < static_cast<int>(values.size()); ++i) { ++counts[values[i]]; emit("visit", i, -1, 2, "Count value frequency"); }
+        int out = 0;
+        for (const auto& [value, count] : counts) for (int n = 0; n < count; ++n) {
+          values[out] = value;
+          emit("overwrite", out++, -1, 5, "Write values in sorted order");
+        }
+      }
     }
   } else {
     for (int i = 0; i < static_cast<int>(values.size()); ++i) {

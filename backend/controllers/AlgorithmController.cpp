@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <sstream>
 #include <map>
+#include <set>
 
 namespace studio {
 
@@ -66,6 +67,15 @@ drogon::HttpResponsePtr optionsResponse() {
   return response;
 }
 
+drogon::HttpResponsePtr unsupportedAlgorithm(const std::string& algorithm) {
+  Json::Value body;
+  body["error"] = "Unsupported algorithm";
+  body["algorithm"] = algorithm;
+  auto response = withCors(body);
+  response->setStatusCode(drogon::k400BadRequest);
+  return response;
+}
+
 Json::Value bodyOrEmpty(const drogon::HttpRequestPtr& request) {
   const auto json = request->getJsonObject();
   return json ? *json : Json::Value(Json::objectValue);
@@ -89,6 +99,8 @@ void AlgorithmController::sorting(const drogon::HttpRequestPtr& request, std::fu
     callback(optionsResponse());
     return;
   }
+  static const std::set<std::string> supported = {"bubble-sort", "selection-sort", "insertion-sort", "merge-sort", "quick-sort", "heap-sort", "shell-sort", "cocktail-sort", "counting-sort"};
+  if (!supported.contains(algorithm)) { callback(unsupportedAlgorithm(algorithm)); return; }
   const auto body = bodyOrEmpty(request);
   auto values = readIntArray(body, "array");
   if (values.empty()) values = {42, 17, 83, 9, 31, 64, 25, 58};
@@ -104,6 +116,8 @@ void AlgorithmController::searching(const drogon::HttpRequestPtr& request, std::
     callback(optionsResponse());
     return;
   }
+  static const std::set<std::string> supported = {"linear-search", "binary-search", "jump-search", "interpolation-search", "exponential-search", "ternary-search"};
+  if (!supported.contains(algorithm)) { callback(unsupportedAlgorithm(algorithm)); return; }
   const auto body = bodyOrEmpty(request);
   auto values = readIntArray(body, "array");
   if (values.empty()) values = {12, 19, 24, 31, 42, 55, 71, 88};
@@ -119,8 +133,19 @@ void AlgorithmController::structures(const drogon::HttpRequestPtr& request, std:
     callback(optionsResponse());
     return;
   }
-  auto res = service_.structures(algorithm);
-  logRun("structures", algorithm, Json::Value(Json::objectValue), res);
+  const auto body = bodyOrEmpty(request);
+  const std::string path = request->path();
+  const std::string prefix = "/api/algorithms/";
+  const auto begin = path.find(prefix);
+  const auto categoryStart = begin == std::string::npos ? std::string::npos : begin + prefix.size();
+  const auto categoryEnd = categoryStart == std::string::npos ? std::string::npos : path.find('/', categoryStart);
+  const std::string category = categoryEnd == std::string::npos ? "" : path.substr(categoryStart, categoryEnd - categoryStart);
+  static const std::set<std::string> supported = {"linked-list", "stack", "queue", "trees", "dynamic-programming"};
+  if (!supported.contains(category)) { callback(unsupportedAlgorithm(category)); return; }
+  auto values = readIntArray(body, "array");
+  const std::string operation = body.isMember("operation") && body["operation"].isString() ? body["operation"].asString() : algorithm;
+  auto res = service_.structures(category, operation, values, readInt(body, "target", 42));
+  logRun(category, operation, body, res);
   
   callback(withCors(toJson(res)));
 }
@@ -130,6 +155,8 @@ void AlgorithmController::graphs(const drogon::HttpRequestPtr& request, std::fun
     callback(optionsResponse());
     return;
   }
+  static const std::set<std::string> supported = {"bfs", "dfs", "dijkstra", "prim", "kruskal", "topological-sort"};
+  if (!supported.contains(algorithm)) { callback(unsupportedAlgorithm(algorithm)); return; }
   auto res = service_.graphs(algorithm);
   logRun("graphs", algorithm, Json::Value(Json::objectValue), res);
   

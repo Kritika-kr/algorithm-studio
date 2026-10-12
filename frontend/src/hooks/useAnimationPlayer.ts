@@ -20,7 +20,11 @@ export const useAnimationPlayer = (steps: AnimationStep[], baseStats?: Algorithm
   }, [steps]);
 
   useEffect(() => {
-    if (!playing || steps.length === 0 || index >= steps.length - 1) return undefined;
+    if (!playing || steps.length === 0) return undefined;
+    if (index >= steps.length - 1) {
+      setPlaying(false);
+      return undefined;
+    }
     const id = window.setTimeout(() => setIndex((current) => Math.min(current + 1, steps.length - 1)), speed);
     return () => window.clearTimeout(id);
   }, [index, playing, speed, steps.length]);
@@ -68,8 +72,8 @@ export const useAnimationPlayer = (steps: AnimationStep[], baseStats?: Algorithm
     }, []),
     jumpTo: useCallback((targetIndex: number) => {
       setPlaying(false);
-      setIndex(targetIndex);
-    }, []),
+      setIndex(Math.max(0, Math.min(targetIndex, Math.max(steps.length - 1, 0))));
+    }, [steps.length]),
     stepForward: useCallback(() => {
       setPlaying(false);
       setIndex((current) => Math.min(current + 1, Math.max(steps.length - 1, 0)));

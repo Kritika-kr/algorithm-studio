@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace studio {
 
@@ -14,12 +15,12 @@ StepResponse SearchingAlgorithms::run(const std::string& algorithm, std::vector<
 
   auto emit = [&](std::string action, int index, int line, std::string note) {
     AnimationStep step;
+    step.found = action == "found";
     step.action = std::move(action);
     step.index = index;
     step.i = index;
     step.value = index >= 0 ? values[index] : 0;
     step.visited = visited;
-    step.found = action == "found";
     step.line = line;
     step.note = std::move(note);
     step.snapshot = values;
@@ -61,13 +62,54 @@ StepResponse SearchingAlgorithms::run(const std::string& algorithm, std::vector<
     int low = 0;
     int high = static_cast<int>(values.size()) - 1;
     while (low <= high && target >= values[low] && target <= values[high]) {
+      const long long numerator = static_cast<long long>(target - static_cast<long long>(values[low])) * (high - low);
       int pos = values[high] == values[low]
                     ? low
-                    : low + ((target - values[low]) * (high - low)) / (values[high] - values[low]);
+                    : low + static_cast<int>(numerator / (static_cast<long long>(values[high]) - values[low]));
       probe(pos, "Interpolated probe");
       if (found) break;
       if (values[pos] < target) low = pos + 1;
       else high = pos - 1;
+    }
+  } else if (algorithm == "exponential-search") {
+    if (values.front() == target) {
+      probe(0, "Check first element");
+    } else {
+      int bound = 1;
+      while (bound < static_cast<int>(values.size()) && values[bound] < target) {
+        probe(bound, "Expand search range");
+        if (found) break;
+        if (bound > std::numeric_limits<int>::max() / 2) break;
+        bound *= 2;
+      }
+      if (!found) {
+        int left = bound / 2;
+        int right = std::min(bound, static_cast<int>(values.size()) - 1);
+        while (left <= right && !found) {
+          int mid = left + (right - left) / 2;
+          probe(mid, "Binary search inside the expanded range");
+          if (found) break;
+          if (values[mid] < target) left = mid + 1;
+          else right = mid - 1;
+        }
+      }
+    }
+  } else if (algorithm == "ternary-search") {
+    int left = 0;
+    int right = static_cast<int>(values.size()) - 1;
+    while (left <= right && !found) {
+      const int third = (right - left) / 3;
+      const int first = left + third;
+      const int second = right - third;
+      probe(first, "Probe first third");
+      if (found) break;
+      if (second != first) {
+        probe(second, "Probe second third");
+        if (found) break;
+      }
+      if (target < values[first]) right = first - 1;
+      else if (target > values[second]) left = second + 1;
+      else { left = first + 1; right = second - 1; }
     }
   } else {
     for (int i = 0; i < static_cast<int>(values.size()); ++i) {

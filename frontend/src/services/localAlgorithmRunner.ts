@@ -1,5 +1,6 @@
 import { AlgorithmCategory, AlgorithmStats, AnimationStep, GraphEdge, GraphNode, StepResponse } from '../types/algorithm';
 import { defaultGraphEdges, defaultGraphNodes } from '../data/algorithms';
+import { validateGraph } from './graphValidation';
 
 const emptyStats = {
   comparisons: 0,
@@ -428,7 +429,13 @@ const runGraph = (id: string, graphNodes: GraphNode[] = defaultGraphNodes, graph
 export const runLocalAlgorithm = (category: AlgorithmCategory, id: string, array: number[], target: number, operation?: string, graphNodes?: GraphNode[], graphEdges?: GraphEdge[], directed?: boolean): StepResponse => {
   if (category === 'Sorting') return runSorting(id, array);
   if (category === 'Searching') return runSearching(id, array, target);
-  if (category === 'Graphs') return runGraph(id, graphNodes, graphEdges, directed);
+  if (category === 'Graphs') {
+    const nodes = graphNodes ?? defaultGraphNodes;
+    const edges = graphEdges ?? defaultGraphEdges;
+    const error = validateGraph(id, nodes, edges, directed ?? false);
+    if (error) return completeResponse([{ action: 'failed', index: -1, i: -1, line: 1, note: error }], []);
+    return runGraph(id, nodes, edges, directed);
+  }
   if (category === 'Linked List' || category === 'Stack' || category === 'Queue' || category === 'Trees') return runStructure(category, id, operation, target, array);
   if (category === 'Dynamic Programming') {
     const values = [1, 1, 2, 3, 5, 8, 13, 21];

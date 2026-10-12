@@ -21,3 +21,24 @@ add_executable(algorithm_studio
 
 target_include_directories(algorithm_studio PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(algorithm_studio PRIVATE Drogon::Drogon)
+
+include(CTest)
+if(BUILD_TESTING)
+  include(FetchContent)
+  FetchContent_Declare(googletest
+    URL https://github.com/google/googletest/archive/refs/tags/v1.15.2.zip
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+  )
+  set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+  FetchContent_MakeAvailable(googletest)
+  add_executable(algorithm_trace_tests tests/AlgorithmTraceTests.cpp
+    services/algorithms/SortingAlgorithms.cpp
+    services/algorithms/SearchingAlgorithms.cpp
+    services/algorithms/StructureAlgorithms.cpp
+  )
+  target_include_directories(algorithm_trace_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+  target_link_libraries(algorithm_trace_tests PRIVATE GTest::gtest_main Drogon::Drogon)
+  target_compile_definitions(algorithm_trace_tests PRIVATE TRACE_FIXTURE_PATH="${CMAKE_CURRENT_SOURCE_DIR}/../tests/fixtures/trace-cases.json")
+  include(GoogleTest)
+  gtest_discover_tests(algorithm_trace_tests)
+endif()

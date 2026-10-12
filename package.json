@@ -2,7 +2,20 @@
   "name": "algorithm-studio",
   "version": "1.0.0",
   "private": true,
-  "description": "A full-stack algorithm learning studio with React, TypeScript, Tailwind CSS, Framer Motion, C++20, Drogon, and CMake.",
+  "description": "Interactive visualizer for sorting, searching, data structures, graph algorithms, and dynamic programming, built with React and C++.",
+  "keywords": [
+    "algorithms",
+    "visualization",
+    "react",
+    "typescript",
+    "cpp",
+    "drogon",
+    "data-structures"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Kritika-kr/sorting-visualizer.git"
+  },
   "scripts": {
     "start": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",

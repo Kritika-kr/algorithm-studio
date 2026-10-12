@@ -21,21 +21,42 @@ export const StructureVisualizer = ({ mode, step }: StructureVisualizerProps) =>
 
 const active = (id: number, step?: AnimationStep) => step?.i === id || step?.node === `N${id + 1}`;
 
-const LinkedListView = ({ step }: { step?: AnimationStep }) => (
-  <div className="flex min-h-[360px] items-center justify-center rounded-md border border-white/10 bg-slate-950/60 p-4">
-    <div className="flex flex-wrap items-center justify-center gap-3">
-      {(step?.snapshot ?? [12, 24, 36, 48]).map((value, index) => (
-        <div key={value} className="flex items-center gap-3">
-          <motion.div animate={{ scale: active(index, step) ? 1.08 : 1 }} className={`grid h-16 w-16 place-items-center rounded-md border ${active(index, step) ? 'border-cyan-300 bg-cyan-300/15 text-cyan-100' : 'border-white/10 bg-white/5 text-white'}`}>
-            {value}
-          </motion.div>
-          {index < 4 && <span className="text-cyan-200">-&gt;</span>}
+const LinkedListView = ({ step }: { step?: AnimationStep }) => {
+  const values = step?.snapshot ?? [3, 7, 11, 15, 19];
+  const pointer = step?.pointerChange;
+  const pointerLabel = (index: number | null) => index === null || index < 0 || index >= values.length ? 'null' : `node ${values[index]}`;
+  return (
+    <div className="flex min-h-[360px] flex-col justify-center gap-6 overflow-hidden rounded-md border border-white/10 bg-slate-950/60 p-4">
+      {values.length ? (
+        <div className="overflow-x-auto pb-2">
+          <div className="mx-auto flex w-max min-w-full items-center justify-center gap-3 px-2 pt-2">
+            {values.map((value, index) => (
+              <div key={`${index}-${value}`} className="flex shrink-0 items-center gap-3">
+                <motion.div animate={{ scale: active(index, step) ? 1.08 : 1 }} className={`relative grid h-16 w-16 place-items-center rounded-md border font-mono ${active(index, step) ? 'border-cyan-300 bg-cyan-300/15 text-cyan-100 shadow-lg shadow-cyan-950/40' : 'border-white/10 bg-white/5 text-white'}`}>
+                  {index === 0 && <span className="absolute -top-5 left-1/2 -translate-x-1/2 text-[9px] font-bold tracking-widest text-cyan-200">HEAD</span>}
+                  {index === values.length - 1 && <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[9px] font-bold tracking-widest text-violet-200">TAIL</span>}
+                  {value}
+                  <span className="absolute bottom-1 right-1 text-[8px] text-slate-500">next</span>
+                </motion.div>
+                {index < values.length - 1 ? (
+                  <span className={`whitespace-nowrap text-sm ${pointer?.field === 'next' && pointer.from === index ? 'font-bold text-amber-200' : 'text-cyan-200'}`} aria-hidden="true">→</span>
+                ) : <span className="text-xs text-slate-500">→ null</span>}
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
-      {step?.snapshot?.length === 0 && <p className="text-sm text-slate-400">List is empty</p>}
+      ) : (
+        <div className="mx-auto rounded-lg border border-white/10 bg-white/[0.03] px-5 py-4 text-center text-sm text-slate-300" role="status">
+          List is empty. {step?.note ?? 'Insert a node to begin.'}
+        </div>
+      )}
+      {pointer && <div className="mx-auto rounded-md border border-amber-300/20 bg-amber-300/5 px-3 py-2 text-xs text-amber-100" aria-live="polite">
+        {pointer.field === 'next' ? `next of ${pointerLabel(pointer.from)} points to ${pointerLabel(pointer.to)}` : `${pointer.field}: ${pointerLabel(pointer.from)} → ${pointerLabel(pointer.to)}`}
+      </div>}
+      {values.length > 0 && <p className="text-center text-xs text-slate-400" aria-live="polite">{step?.note ?? 'Linked list ready.'}</p>}
     </div>
-  </div>
-);
+  );
+};
 
 const StackView = ({ step }: { step?: AnimationStep }) => (
   <div className="grid min-h-[360px] place-items-center rounded-md border border-white/10 bg-slate-950/60 p-4">

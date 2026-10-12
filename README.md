@@ -48,7 +48,7 @@ cmake --build backend/build --config Release
 
 Run the executable produced by your generator. With the Visual Studio generator, it is `backend/build/Release/algorithm_studio.exe`; with a single-configuration generator, it is usually `backend/build/algorithm_studio`. The server listens on port `8080` by default; set `PORT` to change it.
 
-The health endpoint is `GET /api/health`. Algorithm endpoints return a `steps` array and aggregate `stats`, for example `POST /api/algorithms/sorting/quick-sort` with `{"array":[42,17,83,9,31]}`. Other routes cover searching, linked lists, stacks, queues, trees, graphs, dynamic programming, and `GET /api/analytics`.
+The health endpoint is `GET /api/health`. Algorithm endpoints return a `steps` array and aggregate `stats`, for example `POST /api/algorithms/sorting/quick-sort` with `{"array":[42,17,83,9,31]}`. Linked-list steps also include a `pointerChange` object (`field`, `from`, `to`) for head, tail, and next-pointer updates; pointer indices refer to node positions in that step's snapshot, and `null` represents a null pointer. Other routes cover searching, linked lists, stacks, queues, trees, graphs, dynamic programming, and `GET /api/analytics`.
 
 ## Run both together
 

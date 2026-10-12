@@ -35,6 +35,7 @@ if(BUILD_TESTING)
     services/algorithms/SortingAlgorithms.cpp
     services/algorithms/SearchingAlgorithms.cpp
     services/algorithms/StructureAlgorithms.cpp
+    utils/JsonUtils.cpp
   )
   target_include_directories(algorithm_trace_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
   target_link_libraries(algorithm_trace_tests PRIVATE GTest::gtest_main Drogon::Drogon)

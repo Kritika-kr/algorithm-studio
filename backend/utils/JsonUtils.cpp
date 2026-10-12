@@ -39,6 +39,13 @@ Json::Value toJson(const StepResponse& response) {
     item["cost"] = step.cost;
     item["line"] = step.line;
     item["note"] = step.note;
+    if (step.pointerChange) {
+      Json::Value pointer;
+      pointer["field"] = step.pointerChange->field;
+      if (step.pointerChange->from) pointer["from"] = *step.pointerChange->from; else pointer["from"] = Json::nullValue;
+      if (step.pointerChange->to) pointer["to"] = *step.pointerChange->to; else pointer["to"] = Json::nullValue;
+      item["pointerChange"] = pointer;
+    }
     Json::Value snapshot(Json::arrayValue);
     for (const auto value : step.snapshot) snapshot.append(value);
     item["snapshot"] = snapshot;

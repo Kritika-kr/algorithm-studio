@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -20,6 +21,12 @@ struct AnimationStep {
   int line = 1;
   std::string note;
   std::vector<int> snapshot;
+  struct PointerChange {
+    std::string field;
+    std::optional<int> from;
+    std::optional<int> to;
+  };
+  std::optional<PointerChange> pointerChange;
 };
 
 struct AlgorithmStats {

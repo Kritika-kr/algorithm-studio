@@ -72,7 +72,7 @@ export default function App() {
     steps: [], 
     stats: { comparisons: 0, swaps: 0, recursionDepth: 0, visitedNodes: 0, executionTimeMs: 0, memoryBytes: 0 } 
   });
-  const [structureValues, setStructureValues] = useState<Record<string, number[]>>({});
+  const [structureValues, setStructureValues] = useState<Record<string, number[]>>({ 'Linked List': [3, 7, 11, 15, 19] });
   const [graphNodes, setGraphNodes] = useState<GraphNode[]>(() => defaultGraphNodes.map((node) => ({ ...node })));
   const [graphEdges, setGraphEdges] = useState<GraphEdge[]>(() => defaultGraphEdges.map((edge) => ({ ...edge })));
   const [graphDirected, setGraphDirected] = useState(false);

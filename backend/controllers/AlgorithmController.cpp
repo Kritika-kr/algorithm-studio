@@ -143,6 +143,7 @@ void AlgorithmController::structures(const drogon::HttpRequestPtr& request, std:
   static const std::set<std::string> supported = {"linked-list", "stack", "queue", "trees", "dynamic-programming"};
   if (!supported.contains(category)) { callback(unsupportedAlgorithm(category)); return; }
   auto values = readIntArray(body, "array");
+  if (category == "linked-list" && !body.isMember("array")) values = {3, 7, 11, 15, 19};
   const std::string operation = body.isMember("operation") && body["operation"].isString() ? body["operation"].asString() : algorithm;
   auto res = service_.structures(category, operation, values, readInt(body, "target", 42));
   logRun(category, operation, body, res);

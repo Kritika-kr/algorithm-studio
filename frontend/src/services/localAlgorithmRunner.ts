@@ -288,7 +288,71 @@ const runSearching = (id: string, input: number[], target: number): StepResponse
   return completeResponse(steps, values, { ...stats, visitedNodes: visited.length });
 };
 
+const runLinkedList = (operation: string | undefined, target: number, input: number[]): StepResponse => {
+  const values = [...input];
+  const steps: AnimationStep[] = [];
+  const command = (operation ?? '').replace(/-\d+$/, '') || 'traverse';
+  const emit = (action: AnimationStep['action'], note: string, index = -1, pointerChange?: AnimationStep['pointerChange']) => {
+    steps.push({ action, index, i: index, value: index >= 0 ? values[index] : undefined, snapshot: [...values], note, line: Math.min(6, steps.length + 1), ...(pointerChange ? { pointerChange } : {}) });
+  };
+  if (command === 'insert-head' || command === 'insert-tail') {
+    const atHead = command === 'insert-head';
+    const oldLength = values.length;
+    if (atHead) values.unshift(target); else values.push(target);
+    if (atHead) {
+      emit('pointer', `Insert ${target} at head: new node points to ${oldLength ? `old head ${values[1]}` : 'null'}`, 0, { field: 'next', from: 0, to: oldLength ? 1 : null });
+      emit('pointer', `Insert ${target} at head: head now points to the new node`, 0, { field: 'head', from: oldLength ? 1 : null, to: 0 });
+    } else {
+      emit('pointer', `Insert ${target} at tail: old tail points to the new node`, oldLength - 1, { field: 'next', from: oldLength - 1, to: oldLength });
+      emit('pointer', `Insert ${target} at tail: tail now points to the new node`, oldLength, { field: 'tail', from: oldLength ? oldLength - 1 : null, to: oldLength });
+    }
+    emit('insert', `Insert ${target} at ${atHead ? 'head' : 'tail'}: list now contains ${values.length} nodes`, atHead ? 0 : values.length - 1);
+  } else if (command === 'search') {
+    let found = false;
+    values.forEach((value, index) => {
+      if (found) return;
+      emit('visit', `Search: visiting node ${value}`, index);
+      if (value === target) { found = true; emit('found', `Search: found ${target} at node ${index + 1}`, index); }
+    });
+    if (!found) emit('failed', `Search: ${target} is not in the ${values.length ? 'list' : 'empty list'}`);
+  } else if (command === 'delete-head') {
+    if (!values.length) emit('failed', 'Delete head: list is empty; there is no node to remove.');
+    else {
+      const removed = values[0];
+      emit('visit', `Delete head: active node is ${removed}`, 0);
+      emit('pointer', `Delete head: head moves from ${removed} to ${values[1] ?? 'null'}`, 0, { field: 'head', from: 0, to: values.length > 1 ? 1 : null });
+      values.shift();
+      if (!values.length) emit('pointer', 'Delete head: tail now points to null', -1, { field: 'tail', from: 0, to: null });
+      emit('delete', `Delete head: removed ${removed}`, 0);
+    }
+  } else if (command === 'delete-tail') {
+    if (!values.length) emit('failed', 'Delete tail: list is empty; there is no node to remove.');
+    else {
+      for (let index = 0; index < values.length - 1; index += 1) emit('visit', `Delete tail: traversing node ${values[index]}`, index);
+      const removed = values[values.length - 1];
+      if (values.length > 1) emit('pointer', `Delete tail: next pointer of ${values[values.length - 2]} changes from ${removed} to null`, values.length - 2, { field: 'next', from: values.length - 2, to: null });
+      values.pop();
+      emit('pointer', `Delete tail: tail moves from ${removed} to ${values.length ? values[values.length - 1] : 'null'}`, values.length - 1, { field: 'tail', from: values.length, to: values.length ? values.length - 1 : null });
+      emit('delete', `Delete tail: removed ${removed}`, values.length - 1);
+    }
+  } else if (command === 'reverse') {
+    if (!values.length) emit('failed', 'Reverse: list is empty; there are no next pointers to flip.');
+    else {
+      values.forEach((value, index) => emit('pointer', `Reverse: flipping next pointer of node ${value}${index ? ` to node ${values[index - 1]}` : ' to null'}`, index, { field: 'next', from: index, to: index ? index - 1 : null }));
+      emit('pointer', `Reverse: head moves from ${values[0]} to ${values[values.length - 1]}`, values.length - 1, { field: 'head', from: 0, to: values.length - 1 });
+      values.reverse();
+      emit('reverse', 'Reverse: list links now point in reverse order', 0);
+    }
+  } else {
+    values.forEach((value, index) => emit('visit', `Traverse: visiting node ${value}`, index));
+    if (!values.length) emit('failed', 'Traverse: list is empty. Insert a node to begin.');
+  }
+  steps.push({ action: 'complete', index: -1, i: -1, snapshot: [...values], line: 6, note: 'Linked list operation complete' });
+  return completeResponse(steps, values, { ...emptyStats, visitedNodes: steps.filter((step) => step.action === 'visit' || step.action === 'found').length });
+};
+
 const runStructure = (category: AlgorithmCategory, id: string, operation?: string, target = 42, input: number[] = []): StepResponse => {
+  if (category === 'Linked List') return runLinkedList(operation, target, input);
   const values = input.length ? [...input] : category === 'Stack' ? [18, 31, 44] : category === 'Queue' ? [7, 14, 21] : [12, 24, 36, 48];
   const steps: AnimationStep[] = [];
   const command = operation?.replace(/-\d+$/, '') ?? '';

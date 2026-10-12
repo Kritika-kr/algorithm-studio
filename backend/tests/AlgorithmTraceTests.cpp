@@ -7,6 +7,7 @@
 #include "services/algorithms/SearchingAlgorithms.h"
 #include "services/algorithms/SortingAlgorithms.h"
 #include "services/algorithms/StructureAlgorithms.h"
+#include "utils/JsonUtils.h"
 
 namespace {
 Json::Value fixtures() {
@@ -26,7 +27,8 @@ std::vector<int> ints(const Json::Value& value) {
 
 TEST(SharedFixtures, SortingProducesExpectedOutput) {
   studio::SortingAlgorithms algorithms;
-  for (const auto& test : fixtures()["sortCases"]) {
+  const auto data = fixtures();
+  for (const auto& test : data["sortCases"]) {
     const auto response = algorithms.run(test["algorithm"].asString(), ints(test["input"]));
     ASSERT_FALSE(response.steps.empty());
     EXPECT_EQ(response.steps.back().snapshot, ints(test["expected"])) << test["algorithm"];
@@ -35,7 +37,8 @@ TEST(SharedFixtures, SortingProducesExpectedOutput) {
 
 TEST(SharedFixtures, SearchesReturnExpectedIndexOrMinusOne) {
   studio::SearchingAlgorithms algorithms;
-  for (const auto& test : fixtures()["searchCases"]) {
+  const auto data = fixtures();
+  for (const auto& test : data["searchCases"]) {
     const auto response = algorithms.run(test["algorithm"].asString(), ints(test["input"]), test["target"].asInt());
     int found = -1;
     for (const auto& step : response.steps) if (step.action == "found") { found = step.index; break; }
@@ -45,7 +48,8 @@ TEST(SharedFixtures, SearchesReturnExpectedIndexOrMinusOne) {
 
 TEST(SharedFixtures, StructuresProduceExpectedFinalState) {
   studio::StructureAlgorithms algorithms;
-  for (const auto& test : fixtures()["structureCases"]) {
+  const auto data = fixtures();
+  for (const auto& test : data["structureCases"]) {
     std::string category = test["category"].asString();
     std::transform(category.begin(), category.end(), category.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
     if (category == "linked list") category = "linked-list";
@@ -54,5 +58,26 @@ TEST(SharedFixtures, StructuresProduceExpectedFinalState) {
     const auto response = algorithms.run(category, operation, ints(test["input"]), test["target"].asInt());
     ASSERT_FALSE(response.steps.empty());
     EXPECT_EQ(response.steps.back().snapshot, ints(test["expected"])) << category;
+  }
+}
+
+TEST(SharedFixtures, LinkedListDefaultAndOperationsKeepDescriptiveSnapshots) {
+  studio::StructureAlgorithms algorithms;
+  const auto data = fixtures();
+  for (const auto& test : data["linkedListCases"]) {
+    const auto response = algorithms.run("linked-list", test["operation"].asString(), ints(test["input"]), test["target"].asInt());
+    ASSERT_FALSE(response.steps.empty());
+    EXPECT_EQ(response.steps.front().note, test["firstNote"].asString());
+    ASSERT_EQ(response.steps.size(), test["expectedActions"].size());
+    const auto mapped = studio::toJson(response);
+    for (std::size_t index = 0; index < response.steps.size(); ++index) {
+      const auto& step = response.steps[index];
+      EXPECT_FALSE(step.note.empty());
+      EXPECT_TRUE(step.snapshot.size() <= 5 || test["operation"].asString().find("insert") == 0);
+      EXPECT_TRUE(mapped["steps"][static_cast<Json::ArrayIndex>(index)]["snapshot"].isArray());
+      if (step.action == "pointer") EXPECT_TRUE(mapped["steps"][static_cast<Json::ArrayIndex>(index)]["pointerChange"].isObject());
+    }
+    for (std::size_t index = 0; index < response.steps.size(); ++index) EXPECT_EQ(response.steps[index].action, test["expectedActions"][static_cast<Json::ArrayIndex>(index)].asString());
+    EXPECT_EQ(response.steps.back().snapshot, ints(test["expected"]));
   }
 }

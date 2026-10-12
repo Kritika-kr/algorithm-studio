@@ -45,6 +45,11 @@ export interface AnimationStep {
   found?: boolean;
   node?: string;
   target?: string;
+  pointerChange?: {
+    field: 'head' | 'tail' | 'next';
+    from: number | null;
+    to: number | null;
+  };
   edge?: [string, string];
   cost?: number;
   line?: number;

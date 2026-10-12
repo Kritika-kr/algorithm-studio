@@ -20,6 +20,9 @@
     "start": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
     "preview": "npm --prefix frontend run preview",
+    "lint": "npm --prefix frontend run lint",
+    "typecheck": "npm --prefix frontend run typecheck",
+    "test": "npm --prefix frontend run test",
     "backend:configure": "cmake -S backend -B backend/build -DCMAKE_TOOLCHAIN_FILE=C:/Users/Kritika/vcpkg/scripts/buildsystems/vcpkg.cmake",
     "backend:build": "cmake --build backend/build"
   },

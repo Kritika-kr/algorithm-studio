@@ -1,5 +1,7 @@
 # Algorithm Studio
 
+[![CI](https://github.com/Kritika-kr/sorting-visualizer/actions/workflows/ci.yml/badge.svg)](https://github.com/Kritika-kr/sorting-visualizer/actions/workflows/ci.yml)
+
 [![Algorithm Studio screenshot](docs/screenshot.png)](docs/README.md)
 
 [**Live demo**](https://kritika-kr.github.io/sorting-visualizer/)

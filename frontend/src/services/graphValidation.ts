@@ -4,7 +4,7 @@ export function validateGraph(algorithm: string, nodes: GraphNode[], edges: Grap
   const ids = nodes.map(({ id }) => id.trim());
   if (!ids.length) return 'Add at least one node to the graph.';
   if (ids.some((id) => !id) || new Set(ids).size !== ids.length) return 'Node IDs must be non-empty and unique.';
-  if (edges.some(({ source, target, weight }) => !ids.includes(source) || !ids.includes(target) || !Number.isFinite(weight))) return 'Every edge must connect existing nodes and have a finite weight.';
+  if (edges.some(({ source, target, weight }) => !ids.includes(source) || !ids.includes(target) || !Number.isSafeInteger(weight))) return 'Every edge must connect existing nodes and have a finite integer weight.';
   if (algorithm === 'dijkstra' && edges.some(({ weight }) => weight < 0)) return 'Dijkstra requires non-negative edge weights.';
   if ((algorithm === 'prim' || algorithm === 'kruskal') && directed) return 'Prim and Kruskal require an undirected graph.';
   if (algorithm !== 'topological-sort') return null;

@@ -14,8 +14,8 @@ StepResponse AlgorithmService::structures(const std::string& category, const std
   return structureAlgorithms_.run(category, operation, values, target);
 }
 
-StepResponse AlgorithmService::graphs(const std::string& algorithm) const {
-  return graphAlgorithms_.run(algorithm);
+StepResponse AlgorithmService::graphs(const std::string& algorithm, const std::vector<GraphNodeInput>& nodes, const std::vector<GraphEdgeInput>& edges, bool directed) const {
+  return graphAlgorithms_.run(algorithm, nodes, edges, directed);
 }
 
 }  // namespace studio

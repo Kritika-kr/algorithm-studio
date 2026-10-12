@@ -15,7 +15,7 @@ class AlgorithmService {
   StepResponse sorting(const std::string& algorithm, const std::vector<int>& values) const;
   StepResponse searching(const std::string& algorithm, const std::vector<int>& values, int target) const;
   StepResponse structures(const std::string& category, const std::string& operation, const std::vector<int>& values, int target) const;
-  StepResponse graphs(const std::string& algorithm) const;
+  StepResponse graphs(const std::string& algorithm, const std::vector<GraphNodeInput>& nodes = {}, const std::vector<GraphEdgeInput>& edges = {}, bool directed = false) const;
 
  private:
   SortingAlgorithms sortingAlgorithms_;

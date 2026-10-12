@@ -10,19 +10,30 @@
 
 namespace studio {
 
-StepResponse GraphAlgorithms::run(const std::string& algorithm) const {
+using Edge = GraphEdgeInput;
+
+StepResponse GraphAlgorithms::run(const std::string& algorithm, const std::vector<GraphNodeInput>& nodeInput, const std::vector<GraphEdgeInput>& edgeInput, bool directed) const {
   StepResponse response;
-  const std::vector<std::string> nodes = {"A", "B", "C", "D", "E", "F"};
-  struct Edge { std::string from; std::string to; int weight; };
-  const std::vector<Edge> edges = {
-      {"A", "B", 4}, {"A", "D", 2}, {"B", "C", 5}, {"B", "E", 1},
-      {"D", "E", 3}, {"E", "F", 7}, {"C", "F", 2}};
+  std::vector<std::string> nodes;
+  std::vector<GraphEdgeInput> edges;
+  if (nodeInput.empty()) nodes = {"A", "B", "C", "D", "E", "F"};
+  else for (const auto& node : nodeInput) nodes.push_back(node.id);
+  if (edgeInput.empty() && nodeInput.empty()) edges = {{"A", "B", 4}, {"A", "D", 2}, {"B", "C", 5}, {"B", "E", 1}, {"D", "E", 3}, {"E", "F", 7}, {"C", "F", 2}};
+  else edges = edgeInput;
+  auto fail = [&](const std::string& message) { AnimationStep step; step.action = "failed"; step.line = 1; step.note = message; response.steps.push_back(std::move(step)); };
+  std::unordered_set<std::string> uniqueNodes;
+  for (const auto& node : nodes) if (node.empty() || !uniqueNodes.insert(node).second) { fail("Graph node IDs must be non-empty and unique."); break; }
+  for (const auto& edge : edges) if (!uniqueNodes.contains(edge.source) || !uniqueNodes.contains(edge.target)) { fail("Every edge must connect existing nodes."); break; }
+  if (algorithm == "dijkstra" && std::any_of(edges.begin(), edges.end(), [](const auto& edge) { return edge.weight < 0; })) fail("Dijkstra requires non-negative edge weights.");
+  if ((algorithm == "prim" || algorithm == "kruskal") && directed) fail("Prim and Kruskal require an undirected graph.");
+  if (algorithm == "topological-sort" && !directed) fail("Topological sort requires a directed graph.");
+  if (!response.steps.empty()) { AnimationStep complete; complete.action = "complete"; complete.line = 6; complete.note = "Graph validation failed"; response.steps.push_back(std::move(complete)); return response; }
   using Neighbor = std::pair<std::string, int>;
   std::unordered_map<std::string, std::vector<Neighbor>> graph;
   for (const auto& node : nodes) graph[node] = {};
   for (const auto& edge : edges) {
-    graph[edge.from].push_back({edge.to, edge.weight});
-    graph[edge.to].push_back({edge.from, edge.weight});
+    graph[edge.source].push_back({edge.target, edge.weight});
+    if (!directed) graph[edge.target].push_back({edge.source, edge.weight});
   }
 
   auto visit = [&](const std::string& node, const std::string& note) {
@@ -41,8 +52,8 @@ StepResponse GraphAlgorithms::run(const std::string& algorithm) const {
 
   if (algorithm == "bfs") {
     std::queue<std::string> pending;
-    std::unordered_set<std::string> seen{"A"};
-    pending.push("A");
+    std::unordered_set<std::string> seen;
+    for (const auto& root : nodes) { if (!seen.insert(root).second) continue; pending.push(root);
     while (!pending.empty()) {
       auto node = pending.front(); pending.pop();
       visit(node, "BFS visits " + node);
@@ -50,7 +61,7 @@ StepResponse GraphAlgorithms::run(const std::string& algorithm) const {
         edgeStep(node, next, weight, "Inspect " + node + "–" + next);
         if (seen.insert(next).second) pending.push(next);
       }
-    }
+    }}
   } else if (algorithm == "dfs") {
     std::unordered_set<std::string> seen;
     std::function<void(const std::string&)> walk = [&](const std::string& node) {
@@ -60,14 +71,14 @@ StepResponse GraphAlgorithms::run(const std::string& algorithm) const {
         if (!seen.contains(next)) walk(next);
       }
     };
-    walk("A");
+    for (const auto& node : nodes) if (!seen.contains(node)) walk(node);
   } else if (algorithm == "dijkstra") {
     std::unordered_map<std::string, int> distance;
     for (const auto& node : nodes) distance[node] = std::numeric_limits<int>::max();
-    distance["A"] = 0;
+    if (!nodes.empty()) distance[nodes.front()] = 0;
     using Entry = std::pair<int, std::string>;
     std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> pending;
-    pending.push({0, "A"});
+    if (!nodes.empty()) pending.push({0, nodes.front()});
     while (!pending.empty()) {
       const auto [cost, node] = pending.top(); pending.pop();
       if (cost != distance[node]) continue;
@@ -80,18 +91,18 @@ StepResponse GraphAlgorithms::run(const std::string& algorithm) const {
       }
     }
   } else if (algorithm == "prim") {
-    std::unordered_set<std::string> inTree{"A"};
-    visit("A", "Start the minimum spanning tree at A");
+    std::unordered_set<std::string> inTree;
+    if (!nodes.empty()) { inTree.insert(nodes.front()); visit(nodes.front(), "Start the minimum spanning tree"); }
     while (inTree.size() < nodes.size()) {
       const Edge* best = nullptr;
       for (const auto& edge : edges) {
-        if (inTree.contains(edge.from) == inTree.contains(edge.to)) continue;
+        if (inTree.contains(edge.source) == inTree.contains(edge.target)) continue;
         if (!best || edge.weight < best->weight) best = &edge;
       }
       if (!best) break;
-      edgeStep(best->from, best->to, best->weight, "Add the lightest crossing edge", "relax");
+      edgeStep(best->source, best->target, best->weight, "Add the lightest crossing edge", "relax");
       response.stats.totalCost += best->weight;
-      const auto& next = inTree.contains(best->from) ? best->to : best->from;
+      const auto& next = inTree.contains(best->source) ? best->target : best->source;
       inTree.insert(next); visit(next, "Add " + next + " to the spanning tree");
     }
   } else if (algorithm == "kruskal") {
@@ -104,20 +115,17 @@ StepResponse GraphAlgorithms::run(const std::string& algorithm) const {
     auto sorted = edges;
     std::stable_sort(sorted.begin(), sorted.end(), [](const Edge& a, const Edge& b) { return a.weight < b.weight; });
     for (const auto& edge : sorted) {
-      const auto a = find(edge.from); const auto b = find(edge.to);
+      const auto a = find(edge.source); const auto b = find(edge.target);
       const bool accepted = a != b;
-      edgeStep(edge.from, edge.to, edge.weight, accepted ? "Accept edge without creating a cycle" : "Reject edge because it creates a cycle");
+      edgeStep(edge.source, edge.target, edge.weight, accepted ? "Accept edge without creating a cycle" : "Reject edge because it creates a cycle");
       if (accepted) { parent[a] = b; response.stats.totalCost += edge.weight; }
     }
     for (const auto& node : nodes) visit(node, "Kruskal processed node " + node);
   } else if (algorithm == "topological-sort") {
-    const std::vector<Edge> directed = {
-        {"A", "B", 1}, {"A", "D", 1}, {"B", "C", 1}, {"B", "E", 1},
-        {"D", "E", 1}, {"E", "F", 1}, {"C", "F", 1}};
     std::unordered_map<std::string, int> indegree;
     std::unordered_map<std::string, std::vector<std::string>> outgoing;
     for (const auto& node : nodes) indegree[node] = 0;
-    for (const auto& edge : directed) { outgoing[edge.from].push_back(edge.to); indegree[edge.to]++; }
+    for (const auto& edge : edges) { outgoing[edge.source].push_back(edge.target); indegree[edge.target]++; }
     std::queue<std::string> ready;
     for (const auto& node : nodes) if (indegree[node] == 0) ready.push(node);
     while (!ready.empty()) {

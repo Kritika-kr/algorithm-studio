@@ -7,13 +7,16 @@ import { LandingPage } from './components/layout/LandingPage';
 import { ControlsPanel } from './components/panels/ControlsPanel';
 import { StatisticsPanel } from './components/panels/StatisticsPanel';
 import { ExplanationPanel } from './components/panels/ExplanationPanel';
+import { GraphEditor } from './components/panels/GraphEditor';
 import { Star } from 'lucide-react';
 import { WorkspaceVisualizer } from './components/visualizers/WorkspaceVisualizer';
 import { CompareMode } from './components/comparison/CompareMode';
 import { useAnimationPlayer } from './hooks/useAnimationPlayer';
 import { requestAnimationSteps } from './services/algorithmApi';
 import { generateDataset } from './services/datasetService';
-import { AlgorithmCategory, StepResponse } from './types/algorithm';
+import { AlgorithmCategory, GraphEdge, GraphNode, StepResponse } from './types/algorithm';
+import { defaultGraphEdges, defaultGraphNodes } from './data/algorithms';
+import { validateGraph } from './services/graphValidation';
 
 const firstByCategory = (category: AlgorithmCategory) => algorithms.find((item) => item.category === category) ?? algorithms[0];
 type AppView = AlgorithmCategory | 'Home' | 'Compare' | 'Favorites';
@@ -70,12 +73,16 @@ export default function App() {
     stats: { comparisons: 0, swaps: 0, recursionDepth: 0, visitedNodes: 0, executionTimeMs: 0, memoryBytes: 0 } 
   });
   const [structureValues, setStructureValues] = useState<Record<string, number[]>>({});
+  const [graphNodes, setGraphNodes] = useState<GraphNode[]>(() => defaultGraphNodes.map((node) => ({ ...node })));
+  const [graphEdges, setGraphEdges] = useState<GraphEdge[]>(() => defaultGraphEdges.map((edge) => ({ ...edge })));
+  const [graphDirected, setGraphDirected] = useState(false);
   
   const [favorites, setFavorites] = useState<string[]>(() => readStoredStringList('algorithm-favorites'));
   const [recent, setRecent] = useState<string[]>(() => readStoredStringList('algorithm-recent'));
   const workspaceRef = useRef<HTMLDivElement>(null);
 
   const selected = useMemo(() => algorithms.find((item) => item.id === selectedId) ?? algorithms[0], [selectedId]);
+  const graphError = selected.category === 'Graphs' ? validateGraph(selected.id, graphNodes, graphEdges, graphDirected) : null;
   const visibleAlgorithms = useMemo(() => algorithms.filter((item) => item.category === selected.category), [selected.category]);
   const player = useAnimationPlayer(response.steps, response.stats, speed);
 
@@ -92,7 +99,11 @@ export default function App() {
   useEffect(() => {
     const hasPersistentStructure = ['Linked List', 'Stack', 'Queue', 'Trees'].includes(selected.category);
     const inputValues = hasPersistentStructure ? (structureValues[selected.category] ?? []) : array;
-    requestAnimationSteps({ id: selected.id, category: selected.category, array: inputValues, target, operation })
+    if (selected.category === 'Graphs' && validateGraph(selected.id, graphNodes, graphEdges, graphDirected)) {
+      setResponse({ steps: [], stats: { comparisons: 0, swaps: 0, recursionDepth: 0, visitedNodes: 0, executionTimeMs: 0, memoryBytes: 0 } });
+      return;
+    }
+    requestAnimationSteps({ id: selected.id, category: selected.category, array: inputValues, target, operation, nodes: graphNodes, edges: graphEdges, directed: graphDirected })
       .then((result) => {
         setResponse(result);
         if (hasPersistentStructure) {
@@ -110,7 +121,7 @@ export default function App() {
       localStorage.setItem('algorithm-recent', JSON.stringify(nextRecent));
       return nextRecent;
     });
-  }, [array, selected.id, selected.category, target, operation]);
+  }, [array, selected.id, selected.category, target, operation, graphNodes, graphEdges, graphDirected]);
 
   // Handle autostart when response steps load
   useEffect(() => {
@@ -389,7 +400,7 @@ export default function App() {
                     Exit Fullscreen
                   </button>
                 )}
-                <WorkspaceVisualizer category={selected.category} array={array} step={player.currentStep} />
+                <WorkspaceVisualizer category={selected.category} array={array} step={player.currentStep} graphNodes={graphNodes} graphEdges={graphEdges} directed={graphDirected} />
               </div>
               
               {/* Scrub timeline */}
@@ -430,6 +441,7 @@ export default function App() {
           </section>
 
           <aside className="space-y-4">
+            {selected.category === 'Graphs' && <GraphEditor nodes={graphNodes} edges={graphEdges} directed={graphDirected} error={graphError} onNodes={setGraphNodes} onEdges={setGraphEdges} onDirected={setGraphDirected} />}
             <ControlsPanel
               algorithm={selected}
               algorithms={visibleAlgorithms}

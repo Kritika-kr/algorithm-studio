@@ -1,5 +1,5 @@
-import { AlgorithmCategory, AlgorithmStats, AnimationStep, StepResponse } from '../types/algorithm';
-import { defaultGraphEdges } from '../data/algorithms';
+import { AlgorithmCategory, AlgorithmStats, AnimationStep, GraphEdge, GraphNode, StepResponse } from '../types/algorithm';
+import { defaultGraphEdges, defaultGraphNodes } from '../data/algorithms';
 
 const emptyStats = {
   comparisons: 0,
@@ -339,13 +339,13 @@ const runStructure = (category: AlgorithmCategory, id: string, operation?: strin
   return completeResponse(steps, values, { ...emptyStats, visitedNodes: steps.filter((step) => step.node).length, recursionDepth: category === 'Trees' ? 3 : 0 });
 };
 
-const runGraph = (id: string): StepResponse => {
+const runGraph = (id: string, graphNodes: GraphNode[] = defaultGraphNodes, graphEdges: GraphEdge[] = defaultGraphEdges, directed = false): StepResponse => {
   const steps: AnimationStep[] = [];
-  const nodes = ['A', 'B', 'C', 'D', 'E', 'F'];
+  const nodes = graphNodes.map(({ id: nodeId }) => nodeId);
   const adjacency = new Map(nodes.map((node) => [node, [] as Array<{ node: string; weight: number }> ]));
-  defaultGraphEdges.forEach(({ source, target, weight }) => {
+  graphEdges.forEach(({ source, target, weight }) => {
     adjacency.get(source)?.push({ node: target, weight });
-    adjacency.get(target)?.push({ node: source, weight });
+    if (!directed) adjacency.get(target)?.push({ node: source, weight });
   });
   const visit = (node: string, note = `Visit ${node}`) => steps.push({ action: 'visit', node, line: 4, note });
   const edgeStep = (a: string, b: string, weight: number, note: string, action: AnimationStep['action'] = 'edge') => steps.push({ action, edge: [a, b], cost: weight, line: 5, note });
@@ -368,10 +368,10 @@ const runGraph = (id: string): StepResponse => {
         });
       }
     };
-    walk('A');
+    nodes.forEach((node) => { if (!visited.has(node)) walk(node); });
   } else if (id === 'dijkstra') {
     const distance = Object.fromEntries(nodes.map((node) => [node, Infinity])) as Record<string, number>;
-    distance.A = 0;
+    if (nodes.length) distance[nodes[0]] = 0;
     const done = new Set<string>();
     while (done.size < nodes.length) {
       const current = nodes.filter((node) => !done.has(node)).sort((a, b) => distance[a] - distance[b])[0];
@@ -385,9 +385,9 @@ const runGraph = (id: string): StepResponse => {
       });
     }
   } else if (id === 'prim') {
-    const inTree = new Set(['A']); visit('A', 'Start spanning tree at A');
+    const inTree = new Set(nodes.length ? [nodes[0]] : []); if (nodes.length) visit(nodes[0], `Start spanning tree at ${nodes[0]}`);
     while (inTree.size < nodes.length) {
-      const candidates = defaultGraphEdges.filter((edge) => inTree.has(edge.source) !== inTree.has(edge.target)).sort((a, b) => a.weight - b.weight);
+      const candidates = graphEdges.filter((edge) => inTree.has(edge.source) !== inTree.has(edge.target)).sort((a, b) => a.weight - b.weight);
       const edge = candidates[0]; if (!edge) break;
       edgeStep(edge.source, edge.target, edge.weight, `Add minimum crossing edge (${edge.weight})`, 'relax');
       totalCost += edge.weight;
@@ -396,7 +396,7 @@ const runGraph = (id: string): StepResponse => {
   } else if (id === 'kruskal') {
     const parent = Object.fromEntries(nodes.map((node) => [node, node])) as Record<string, string>;
     const find = (node: string): string => parent[node] === node ? node : (parent[node] = find(parent[node]));
-    [...defaultGraphEdges].sort((a, b) => a.weight - b.weight).forEach((edge) => {
+    [...graphEdges].sort((a, b) => a.weight - b.weight).forEach((edge) => {
       const a = find(edge.source); const b = find(edge.target);
       edgeStep(edge.source, edge.target, edge.weight, a !== b ? `Accept edge (${edge.weight})` : 'Reject cycle edge');
       if (a !== b) { parent[a] = b; totalCost += edge.weight; visited.add(edge.source); visited.add(edge.target); }
@@ -404,11 +404,11 @@ const runGraph = (id: string): StepResponse => {
     visited.forEach((node) => visit(node, `Node ${node} belongs to the minimum spanning forest`));
   } else if (id === 'topological-sort') {
     const indegree = Object.fromEntries(nodes.map((node) => [node, 0])) as Record<string, number>;
-    defaultGraphEdges.forEach(({ target }) => { indegree[target] += 1; });
+    graphEdges.forEach(({ target }) => { indegree[target] += 1; });
     const ready = nodes.filter((node) => indegree[node] === 0);
     while (ready.length) {
       const node = ready.shift()!; visit(node, `Emit ${node} in topological order`);
-      defaultGraphEdges.filter((edge) => edge.source === node).forEach((edge) => {
+      graphEdges.filter((edge) => edge.source === node).forEach((edge) => {
         edgeStep(edge.source, edge.target, edge.weight, `Remove dependency ${edge.source} → ${edge.target}`);
         indegree[edge.target] -= 1; if (indegree[edge.target] === 0) ready.push(edge.target);
       });
@@ -425,10 +425,10 @@ const runGraph = (id: string): StepResponse => {
   });
 };
 
-export const runLocalAlgorithm = (category: AlgorithmCategory, id: string, array: number[], target: number, operation?: string): StepResponse => {
+export const runLocalAlgorithm = (category: AlgorithmCategory, id: string, array: number[], target: number, operation?: string, graphNodes?: GraphNode[], graphEdges?: GraphEdge[], directed?: boolean): StepResponse => {
   if (category === 'Sorting') return runSorting(id, array);
   if (category === 'Searching') return runSearching(id, array, target);
-  if (category === 'Graphs') return runGraph(id);
+  if (category === 'Graphs') return runGraph(id, graphNodes, graphEdges, directed);
   if (category === 'Linked List' || category === 'Stack' || category === 'Queue' || category === 'Trees') return runStructure(category, id, operation, target, array);
   if (category === 'Dynamic Programming') {
     const values = [1, 1, 2, 3, 5, 8, 13, 21];

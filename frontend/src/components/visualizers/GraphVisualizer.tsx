@@ -1,27 +1,32 @@
 import { motion } from 'framer-motion';
 import { defaultGraphEdges, defaultGraphNodes } from '../../data/algorithms';
-import { AnimationStep } from '../../types/algorithm';
+import { AnimationStep, GraphEdge, GraphNode } from '../../types/algorithm';
 
 interface GraphVisualizerProps {
   step?: AnimationStep;
+  nodes?: GraphNode[];
+  edges?: GraphEdge[];
+  directed?: boolean;
 }
 
-export const GraphVisualizer = ({ step }: GraphVisualizerProps) => (
+export const GraphVisualizer = ({ step, nodes = defaultGraphNodes, edges = defaultGraphEdges, directed = false }: GraphVisualizerProps) => (
   <div className="relative min-h-[360px] overflow-hidden rounded-md border border-white/10 bg-slate-950/60">
     <svg className="absolute inset-0 h-full w-full">
-      {defaultGraphEdges.map((edge) => {
-        const source = defaultGraphNodes.find((node) => node.id === edge.source)!;
-        const target = defaultGraphNodes.find((node) => node.id === edge.target)!;
+      {edges.map((edge, index) => {
+        const source = nodes.find((node) => node.id === edge.source);
+        const target = nodes.find((node) => node.id === edge.target);
+        if (!source || !target) return null;
         const hot = step?.edge?.[0] === edge.source && step.edge[1] === edge.target;
         return (
-          <g key={`${edge.source}-${edge.target}`}>
-            <line x1={`${source.x}%`} y1={`${source.y}%`} x2={`${target.x}%`} y2={`${target.y}%`} stroke={hot ? '#22d3ee' : 'rgba(255,255,255,0.18)'} strokeWidth={hot ? 4 : 2} />
+          <g key={`${edge.source}-${edge.target}-${index}`}>
+            <line x1={`${source.x}%`} y1={`${source.y}%`} x2={`${target.x}%`} y2={`${target.y}%`} markerEnd={directed ? 'url(#graph-arrow)' : undefined} stroke={hot ? '#22d3ee' : 'rgba(255,255,255,0.18)'} strokeWidth={hot ? 4 : 2} />
             <text x={`${(source.x + target.x) / 2}%`} y={`${(source.y + target.y) / 2}%`} fill="#94a3b8" fontSize="12">{edge.weight}</text>
           </g>
         );
       })}
+      <defs><marker id="graph-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="rgba(255,255,255,0.5)" /></marker></defs>
     </svg>
-    {defaultGraphNodes.map((node) => (
+    {nodes.map((node) => (
       <motion.div
         key={node.id}
         animate={{ scale: step?.node === node.id ? 1.16 : 1 }}

@@ -157,8 +157,14 @@ void AlgorithmController::graphs(const drogon::HttpRequestPtr& request, std::fun
   }
   static const std::set<std::string> supported = {"bfs", "dfs", "dijkstra", "prim", "kruskal", "topological-sort"};
   if (!supported.contains(algorithm)) { callback(unsupportedAlgorithm(algorithm)); return; }
-  auto res = service_.graphs(algorithm);
-  logRun("graphs", algorithm, Json::Value(Json::objectValue), res);
+  const auto body = bodyOrEmpty(request);
+  std::vector<GraphNodeInput> nodes;
+  std::vector<GraphEdgeInput> edges;
+  if (body["nodes"].isArray()) for (const auto& node : body["nodes"]) if (node["id"].isString()) nodes.push_back({node["id"].asString()});
+  if (body["edges"].isArray()) for (const auto& edge : body["edges"]) if (edge["source"].isString() && edge["target"].isString() && edge["weight"].isInt()) edges.push_back({edge["source"].asString(), edge["target"].asString(), edge["weight"].asInt()});
+  const bool directed = body["directed"].isBool() && body["directed"].asBool();
+  auto res = service_.graphs(algorithm, nodes, edges, directed);
+  logRun("graphs", algorithm, body, res);
   
   callback(withCors(toJson(res)));
 }

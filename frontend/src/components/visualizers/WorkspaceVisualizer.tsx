@@ -1,4 +1,4 @@
-import { AlgorithmCategory, AnimationStep } from '../../types/algorithm';
+import { AlgorithmCategory, AnimationStep, GraphEdge, GraphNode } from '../../types/algorithm';
 import { ArrayVisualizer } from './ArrayVisualizer';
 import { GraphVisualizer } from './GraphVisualizer';
 import { StructureVisualizer } from './StructureVisualizer';
@@ -7,11 +7,14 @@ interface WorkspaceVisualizerProps {
   category: AlgorithmCategory;
   array: number[];
   step?: AnimationStep;
+  graphNodes?: GraphNode[];
+  graphEdges?: GraphEdge[];
+  directed?: boolean;
 }
 
-export const WorkspaceVisualizer = ({ category, array, step }: WorkspaceVisualizerProps) => {
+export const WorkspaceVisualizer = ({ category, array, step, graphNodes, graphEdges, directed }: WorkspaceVisualizerProps) => {
   if (category === 'Sorting' || category === 'Searching') return <ArrayVisualizer array={array} step={step} />;
-  if (category === 'Graphs') return <GraphVisualizer step={step} />;
+  if (category === 'Graphs') return <GraphVisualizer step={step} nodes={graphNodes} edges={graphEdges} directed={directed} />;
   if (category === 'Linked List' || category === 'Stack' || category === 'Queue' || category === 'Trees') return <StructureVisualizer mode={category} step={step} />;
   if (category === 'Dynamic Programming') {
     const values = step?.snapshot ?? [];
